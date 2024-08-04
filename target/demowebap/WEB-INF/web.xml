@@ -1,0 +1,13 @@
+<!-- web.xml -->
+<web-app>
+    <servlet>
+        <servlet-name>CsvReaderServlet</servlet-name>
+        <servlet-class>src\main\java\CsvReaderServlet.java</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CsvReaderServlet</servlet-name>
+        <url-pattern>/readCSV</url-pattern>
+    </servlet-mapping>
+</web-app>
+
+

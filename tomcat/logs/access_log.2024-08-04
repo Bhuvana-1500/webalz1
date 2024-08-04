@@ -1,0 +1,13 @@
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:02 +0530] "GET /demowebap HTTP/1.1" 302 - http-bio-9091-exec-1 0
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:02 +0530] "GET /demowebap/ HTTP/1.1" 200 2464 http-bio-9091-exec-2 684
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:08 +0530] "POST /demowebap/no.of.mgmt.jsp HTTP/1.1" 200 3194 http-bio-9091-exec-3 121
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:14 +0530] "POST /demowebap/mgmt.jsp HTTP/1.1" 200 4734 http-bio-9091-exec-7 153
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:26 +0530] "POST /demowebap/resourceGroups.jsp HTTP/1.1" 200 4777 http-bio-9091-exec-9 152
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:33 +0530] "POST /demowebap/vnets.jsp HTTP/1.1" 200 5289 http-bio-9091-exec-3 120
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:41 +0530] "POST /demowebap/subnets.jsp HTTP/1.1" 200 6432 http-bio-9091-exec-4 151
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:49 +0530] "POST /demowebap/peering.jsp HTTP/1.1" 200 5630 http-bio-9091-exec-4 120
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:03:54 +0530] "POST /demowebap/displayCsv.jsp HTTP/1.1" 200 6061 http-bio-9091-exec-1 581
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:07:53 +0530] "POST /demowebap/displayCsv.jsp HTTP/1.1" 500 2760 http-bio-9091-exec-5 203
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:09:11 +0530] "POST /demowebap/displayCsv.jsp HTTP/1.1" 200 8960 http-bio-9091-exec-8 258
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:15:44 +0530] "POST /demowebap/displayCsv.jsp HTTP/1.1" 200 9153 http-bio-9091-exec-10 230
+0:0:0:0:0:0:0:1 - - [04/Aug/2024:16:20:48 +0530] "POST /demowebap/MyClass HTTP/1.1" 200 61 http-bio-9091-exec-2 277774

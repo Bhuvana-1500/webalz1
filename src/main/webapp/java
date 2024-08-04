@@ -1,0 +1,231 @@
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+
+@WebServlet("/MyClass")
+public class MyClass extends HttpServlet {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+        PrintWriter out = res.getWriter();
+        res.setContentType("text/html");
+        String clientId = req.getParameter("clientId");
+        String clientSecret = req.getParameter("clientSecret");
+        String tenantId = req.getParameter("tenantId");
+
+        // Management Groups
+        String numManagementGroupsStr = req.getParameter("numManagementGroups");
+        if (numManagementGroupsStr == null) {
+            out.println("Number of management groups is missing.");
+            return;
+        }
+        int numManagementGroups = Integer.parseInt(numManagementGroupsStr);
+        String[] mgNames = new String[numManagementGroups];
+        String[] mgDisplayNames = new String[numManagementGroups];
+        String[] mgSubscriptionIds = new String[numManagementGroups];
+
+        for (int i = 0; i < numManagementGroups; i++) {
+            mgNames[i] = req.getParameter("mgName" + i);
+            mgDisplayNames[i] = req.getParameter("mgDisplayName" + i);
+            mgSubscriptionIds[i] = req.getParameter("mgSubscriptionIds" + i);
+
+            // Debugging output
+            if (mgNames[i] == null || mgDisplayNames[i] == null || mgSubscriptionIds[i] == null) {
+                out.println("Management group " + i + " information is missing.");
+                return;
+            }
+        }
+
+        // Subscriptions and Resource Groups
+        String numSubscriptionsStr = req.getParameter("numSubscriptions");
+        if (numSubscriptionsStr == null) {
+            out.println("Number of subscriptions is missing.");
+            return;
+        }
+        int numSubscriptions = Integer.parseInt(numSubscriptionsStr);
+        String[] subscriptionIds = new String[numSubscriptions];
+        int[] numResourceGroups = new int[numSubscriptions];
+        String[][] rgNames = new String[numSubscriptions][];
+        String[][] rgLocations = new String[numSubscriptions][];
+        int[][] numVNets = new int[numSubscriptions][];
+        String[][][] vnetNames = new String[numSubscriptions][][];
+        String[][][] vnetAddressSpaces = new String[numSubscriptions][][];
+        int[][][] numSubnets = new int[numSubscriptions][][];
+        String[][][][] subnetNames = new String[numSubscriptions][][][];
+        String[][][][] subnetAddressSpaces = new String[numSubscriptions][][][];
+
+        for (int i = 0; i < numSubscriptions; i++) {
+            subscriptionIds[i] = req.getParameter("subscriptionId" + i);
+            if (subscriptionIds[i] == null || subscriptionIds[i].isEmpty()) {
+                out.println("Subscription ID " + i + " is missing or empty.");
+                return;
+            }
+
+            numResourceGroups[i] = Integer.parseInt(req.getParameter("numResourceGroups" + i));
+            rgNames[i] = new String[numResourceGroups[i]];
+            rgLocations[i] = new String[numResourceGroups[i]];
+            numVNets[i] = new int[numResourceGroups[i]];
+            vnetNames[i] = new String[numResourceGroups[i]][];
+            vnetAddressSpaces[i] = new String[numResourceGroups[i]][];
+            numSubnets[i] = new int[numResourceGroups[i]][];
+            subnetNames[i] = new String[numResourceGroups[i]][][];
+            subnetAddressSpaces[i] = new String[numResourceGroups[i]][][];
+
+            for (int j = 0; j < numResourceGroups[i]; j++) {
+                rgNames[i][j] = req.getParameter("rgName" + i + "_" + j);
+                rgLocations[i][j] = req.getParameter("rgLocation" + i + "_" + j);
+
+                // Debugging output
+                if (rgNames[i][j] == null || rgLocations[i][j] == null) {
+                    out.println("Resource group " + j + " for subscription " + i + " information is missing.");
+                    return;
+                }
+
+                numVNets[i][j] = Integer.parseInt(req.getParameter("numVNets" + i + "_" + j));
+                vnetNames[i][j] = new String[numVNets[i][j]];
+                vnetAddressSpaces[i][j] = new String[numVNets[i][j]];
+                numSubnets[i][j] = new int[numVNets[i][j]];
+                subnetNames[i][j] = new String[numVNets[i][j]][];
+                subnetAddressSpaces[i][j] = new String[numVNets[i][j]][];
+
+                for (int k = 0; k < numVNets[i][j]; k++) {
+                    vnetNames[i][j][k] = req.getParameter("vnetName" + i + "_" + j + "_" + k);
+                    vnetAddressSpaces[i][j][k] = req.getParameter("vnetAddressSpace" + i + "_" + j + "_" + k);
+                    numSubnets[i][j][k] = Integer.parseInt(req.getParameter("numSubnets" + i + "_" + j + "_" + k));
+
+                    // Debugging output
+                    if (vnetNames[i][j][k] == null || vnetAddressSpaces[i][j][k] == null) {
+                        out.println("VNet " + k + " for resource group " + j + " in subscription " + i + " information is missing.");
+                        return;
+                    }
+                    subnetNames[i][j][k] = new String[numSubnets[i][j][k]];
+                    subnetAddressSpaces[i][j][k] = new String[numSubnets[i][j][k]];
+
+                    for (int l = 0; l < numSubnets[i][j][k]; l++) {
+                        subnetNames[i][j][k][l] = req.getParameter("subnetName" + i + "_" + j + "_" + k + "_" + l);
+                        subnetAddressSpaces[i][j][k][l] = req.getParameter("subnetAddressSpace" + i + "_" + j + "_" + k + "_" + l);
+
+                        // Debugging output
+                        if (subnetNames[i][j][k][l] == null || subnetAddressSpaces[i][j][k][l] == null) {
+                            out.println("Subnet " + l + " for VNet " + k + " in resource group " + j + " in subscription " + i + " information is missing.");
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Generate Terraform files
+        try {
+            createTerraformMainFile(mgNames, mgDisplayNames, mgSubscriptionIds, subscriptionIds, rgNames, rgLocations, vnetNames, vnetAddressSpaces, numSubnets, clientId, subnetNames, subnetAddressSpaces, clientSecret, tenantId);
+            executeTerraformCommand("terraform init");
+            executeTerraformCommand("terraform apply -auto-approve");
+            out.println("Terraform configuration generated and applied successfully.");
+        } catch (Exception e) {
+            out.println("Error generating Terraform configuration: " + e.getMessage());
+        }
+    }
+
+    private static void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, String[] mgSubscriptionIds, String[] subscriptionIds, String[][] rgNames, String[][] rgLocations, String[][][] vnetNames, String[][][] vnetAddressSpaces, int[][][] numSubnets, String[][][][] subnetNames, String[][][][] subnetAddressSpaces, String clientId, String clientSecret, String tenantId) {
+        File terraformDir = new File("terraform");
+        if (!terraformDir.exists()) {
+            terraformDir.mkdir();
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("terraform/main.tf"))) {
+            writer.write("terraform {\n");
+            writer.write("  required_providers {\n");
+            writer.write("    azurerm = {\n");
+            writer.write("      source  = \"hashicorp/azurerm\"\n");
+            writer.write("      version = \"3.106.1\"\n");
+            writer.write("    }\n");
+            writer.write("  }\n");
+            writer.write("}\n\n");
+
+            writer.write("provider \"azurerm\" {\n");
+            writer.write("  features {}\n");
+            writer.write("}\n\n");
+
+            writer.write("locals {\n");
+            writer.write("  management_groups = [\n");
+            for (int i = 0; i < mgNames.length; i++) {
+                writer.write("    {\n");
+                writer.write("      name = \"" + mgNames[i] + "\",\n");
+                writer.write("      display_name = \"" + mgDisplayNames[i] + "\",\n");
+                writer.write("      subscription_ids = [");
+
+                // Writing subscription IDs for the current management group
+                String[] subscriptionIdList = mgSubscriptionIds[i].split(",");
+                for (int j = 0; j < subscriptionIdList.length; j++) {
+                    writer.write("\"" + subscriptionIdList[j].trim() + "\"");
+                    if (j < subscriptionIdList.length - 1) {
+                        writer.write(", ");
+                    }
+                }
+                writer.write("]\n");
+
+                writer.write("    },\n");
+            }
+            writer.write("  ]\n");
+            writer.write("}\n\n");
+
+            writer.write("resource \"azurerm_management_group\" \"mg\" {\n");
+            writer.write("  for_each = { for mg in local.management_groups : mg.name => mg }\n");
+            writer.write("  name         = each.value.name\n");
+            writer.write("  display_name = each.value.display_name\n");
+            writer.write("  subscription_ids = each.value.subscription_ids\n");
+            writer.write("  provider     = azurerm\n");
+            writer.write("}\n\n");
+
+            for (int i = 0; i < subscriptionIds.length; i++) {
+                writer.write("provider \"azurerm\" {\n");
+                writer.write("  alias    = \"subscription_" + i + "\"\n");
+                writer.write("  features {}\n");
+                writer.write("  subscription_id = \"" + subscriptionIds[i] + "\"\n");
+        
+                // Add service principal details
+                writer.write("  client_id     = \"" + clientId + "\"\n");
+                writer.write("  client_secret = \"" + clientSecret + "\"\n");
+                writer.write("  tenant_id     = \"" + tenantId + "\"\n");
+        
+                writer.write("}\n\n");
+            }
+
+            for (int i = 0; i < subscriptionIds.length; i++) {
+                for (int j = 0; j < rgNames[i].length; j++) {
+                    writer.write("resource \"azurerm_resource_group\" \"rg_" + i + "_" + j + "\" {\n");
+                    writer.write("  name     = \"" + rgNames[i][j] + "\"\n");
+                    writer.write("  location = \"" + rgLocations[i][j] + "\"\n");
+                    writer.write("  provider = azurerm.subscription_" + i + "\n");
+                    writer.write("}\n\n");
+
+                    for (int k = 0; k < vnetNames[i][j].length; k++) {
+                        writer.write("resource \"azurerm_virtual_network\" \"vnet_" + i + "_" + j + "_" + k + "\" {\n");
+                        writer.write("  name                = \"" + vnetNames[i][j][k] + "\"\n");
+                        writer.write("  address_space       = [\"" + vnetAddressSpaces[i][j][k] + "\"]\n");
+                        writer.write("  location            = azurerm_resource_group.rg_" + i + "_" + j + ".location\n");
+                        writer.write("  resource_group_name = azurerm_resource_group.rg_" + i + "_" + j + ".name\n");
+                        writer.write("  provider            = azurerm.subscription_" + i + "\n");
+                        writer.write("}\n\n");
+
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void executeTerraformCommand(String command) throws IOException, InterruptedException {
+        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
+        processBuilder.directory(new File("terraform"));
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            System.out.println(line);
+        }
+        process.waitFor();
+    }
+}
