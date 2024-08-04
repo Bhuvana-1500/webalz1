@@ -168,6 +168,8 @@ private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, 
                                       String hubVNetName, String[] hubToSpokeVNetNames, String[] spokeVNetNames, 
                                       String[] spokeToHubVNetNames, String[] mgNamesp, int numPolicyMgmtGroups, 
                                       String principleId) throws IOException {
+
+    out.println("done1");
     File terraformDir = new File("terraform");
     if (!terraformDir.exists()) {
         terraformDir.mkdir();
