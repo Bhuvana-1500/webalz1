@@ -149,13 +149,11 @@ public class MyClass extends HttpServlet {
             spokeVNetNames[p] = req.getParameter("spokeVNetName" + p);
             spokeToHubVNetNames[p] = req.getParameter("spokeToHubVNetName" + p);
         }
-         out.println("done");
 
         // Generate Terraform files
         try {
-            out.println("done1");
+            out.println("done");
             createTerraformMainFile(mgNames, mgDisplayNames, mgSubscriptionIds, subscriptionIds, rgNames, rgLocations, numVNets, vnetNames, vnetAddressSpaces, numSubnets, subnetNames, subnetAddressSpaces, clientId, clientSecret, tenantId, numPeeringVNets, hubVNetName, hubToSpokeVNetNames, spokeVNetNames, spokeToHubVNetNames, mgNamesp, numPolicyMgmtGroups, principleId);
-            out.println(tenantId);
         } catch (Exception e) {
             out.println("Error generating Terraform configuration: " + e.getMessage());
         }
