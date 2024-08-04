@@ -159,12 +159,31 @@ public class MyClass extends HttpServlet {
                 writer.write("}\n\n");
             }
 
-            for (int i = 0; i < mgNames.length; i++) {
-                writer.write("resource \"azurerm_management_group\" \"mg_" + i + "\" {\n");
-                writer.write("  display_name = \"" + mgDisplayNames[i] + "\"\n");
-                writer.write("  name = \"" + mgNames[i] + "\"\n");
-                writer.write("}\n\n");
-            }
+                     for (int i = 0; i < mgNames.length; i++) {
+    // Write the beginning of the resource block
+    writer.write("resource \"azurerm_management_group\" \"" + mgNames[i] + "\" {\n");
+    writer.write("    name = \"" + mgNames[i] + "\"\n");
+    writer.write("    display_name = \"" + mgDisplayNames[i] + "\"\n");
+    if (mgNames[i]!=null && mgSubscriptionIds[i]!=null){
+    writer.write("    subscription_ids = [");
+
+    // Writing subscription IDs for the current management group
+    String[] subscriptionIdList = mgSubscriptionIds[i].split(",");
+    for (int j = 0; j < subscriptionIdList.length; j++) {
+        writer.write("\"" + subscriptionIdList[j].trim() + "\"");
+        if (j < subscriptionIdList.length - 1) {
+            writer.write(", ");
+        }
+    }
+    writer.write("]\n");
+}
+
+    // Correctly write the provider line
+    writer.write("    provider = azurerm.provider0\n");
+
+    // Close the resource block
+    writer.write("}\n");
+}
 
             for (int i = 0; i < subscriptionIds.length; i++) {
                 for (int j = 0; j < rgNames[i].length; j++) {
