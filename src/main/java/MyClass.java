@@ -159,31 +159,12 @@ public class MyClass extends HttpServlet {
                 writer.write("}\n\n");
             }
 
-                     for (int i = 0; i < mgNames.length; i++) {
-    // Write the beginning of the resource block
-    writer.write("resource \"azurerm_management_group\" \"" + mgNames[i] + "\" {\n");
-    writer.write("    name = \"" + mgNames[i] + "\"\n");
-    writer.write("    display_name = \"" + mgDisplayNames[i] + "\"\n");
-    if (mgNames[i]!=null && mgSubscriptionIds[i]!=null){
-    writer.write("    subscription_ids = [");
-
-    // Writing subscription IDs for the current management group
-    String[] subscriptionIdList = mgSubscriptionIds[i].split(",");
-    for (int j = 0; j < subscriptionIdList.length; j++) {
-        writer.write("\"" + subscriptionIdList[j].trim() + "\"");
-        if (j < subscriptionIdList.length - 1) {
-            writer.write(", ");
-        }
-    }
-    writer.write("]\n");
-}
-
-    // Correctly write the provider line
-    writer.write("    provider = azurerm.provider0\n");
-
-    // Close the resource block
-    writer.write("}\n");
-}
+            for (int i = 0; i < mgNames.length; i++) {
+                writer.write("resource \"azurerm_management_group\" \"mg_" + i + "\" {\n");
+                writer.write("  display_name = \"" + mgDisplayNames[i] + "\"\n");
+                writer.write("  name = \"" + mgNames[i] + "\"\n");
+                writer.write("}\n\n");
+            }
 
             for (int i = 0; i < subscriptionIds.length; i++) {
                 for (int j = 0; j < rgNames[i].length; j++) {
@@ -278,26 +259,20 @@ public class MyClass extends HttpServlet {
             System.out.println("File uploaded successfully.");
         } else {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                StringBuilder response = new StringBuilder();
                 String responseLine;
-                while ((responseLine = br.readLine()) != null) {
-                    response.append(responseLine.trim());
+                    StringBuilder response = new StringBuilder();
+                    while ((responseLine = br.readLine()) != null) {
+                        response.append(responseLine.trim());
+                    }
+                    System.out.println("Error uploading file: " + response.toString());
                 }
-                System.out.println("File upload failed: " + response.toString());
             }
         }
-    }
+    
 
     private String encodeFileToBase64(File file) throws IOException {
-        try (FileInputStream fis = new FileInputStream(file);
-             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                bos.write(buffer, 0, bytesRead);
-            }
-            return Base64.getEncoder().encodeToString(bos.toByteArray());
-        }
+        byte[] fileContent = java.nio.file.Files.readAllBytes(file.toPath());
+        return Base64.getEncoder().encodeToString(fileContent);
     }
 
     private static int getSubscriptionIndexByVNetName(String[] subscriptionIds, String vnetName) {
