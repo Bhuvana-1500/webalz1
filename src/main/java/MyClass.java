@@ -155,7 +155,7 @@ public class MyClass extends HttpServlet {
         try {
             out.println("done1");
             createTerraformMainFile(mgNames, mgDisplayNames, mgSubscriptionIds, subscriptionIds, rgNames, rgLocations, numVNets, vnetNames, vnetAddressSpaces, numSubnets, subnetNames, subnetAddressSpaces, clientId, clientSecret, tenantId, numPeeringVNets, hubVNetName, hubToSpokeVNetNames, spokeVNetNames, spokeToHubVNetNames, mgNamesp, numPolicyMgmtGroups, principleId);
-            out.println("done2");
+            out.println(tenantId);
         } catch (Exception e) {
             out.println("Error generating Terraform configuration: " + e.getMessage());
         }
