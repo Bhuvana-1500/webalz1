@@ -156,9 +156,6 @@ public class MyClass extends HttpServlet {
         // Generate Terraform files
         try {
             createTerraformMainFile(mgNames, mgDisplayNames, mgSubscriptionIds, subscriptionIds, rgNames, rgLocations, numVNets, vnetNames, vnetAddressSpaces, numSubnets, subnetNames, subnetAddressSpaces, clientId, clientSecret, tenantId, numPeeringVNets, hubVNetName, hubToSpokeVNetNames, spokeVNetNames, spokeToHubVNetNames, mgNamesp, numPolicyMgmtGroups, principleId);
-            executeTerraformCommand("terraform init");
-            executeTerraformCommand("terraform apply -auto-approve");            
-            out.println("Terraform configuration generated and applied successfully.");
         } catch (Exception e) {
             out.println("Error generating Terraform configuration: " + e.getMessage());
         }
