@@ -1,13 +1,19 @@
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import javax.servlet.*;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
+import java.util.HashMap;
+import java.util.Map;
 
 @WebServlet("/MyClass")
 public class MyClass extends HttpServlet {
+
+    private static final String GITHUB_API_URL = "https://github.com/Bhuvana-1500/webalz1/tree/main";
+    private static final String GITHUB_TOKEN = "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"; // Replace with your GitHub token
     private static Map<String, Integer> vnetNameToSubscriptionIndexMap = new HashMap<>();
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
@@ -154,6 +160,9 @@ public class MyClass extends HttpServlet {
         try {
             out.println("done");
             createTerraformMainFile(mgNames, mgDisplayNames, mgSubscriptionIds, subscriptionIds, rgNames, rgLocations, numVNets, vnetNames, vnetAddressSpaces, numSubnets, subnetNames, subnetAddressSpaces, clientId, clientSecret, tenantId, numPeeringVNets, hubVNetName, hubToSpokeVNetNames, spokeVNetNames, spokeToHubVNetNames, mgNamesp, numPolicyMgmtGroups, principleId);
+            
+            // Upload file to GitHub
+            uploadFileToGitHub("terraform/main.tf", new File("terraform/main.tf"));
         } catch (Exception e) {
             out.println("Error generating Terraform configuration: " + e.getMessage());
         }
@@ -312,6 +321,41 @@ private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, 
         writer.flush();
     }
 }
+
+    private void uploadFileToGitHub(String filePath, File file) throws IOException {
+        String url = GITHUB_API_URL.replace("PATH", filePath);
+        URL githubUrl = new URL(url);
+
+        HttpURLConnection connection = (HttpURLConnection) githubUrl.openConnection();
+        connection.setRequestMethod("PUT");
+        connection.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+
+        String content = new String(java.nio.file.Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        String contentBase64 = Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8));
+        
+        String jsonPayload = String.format("{\"message\": \"Create %s\",\"content\": \"%s\"}", filePath, contentBase64);
+
+        try (OutputStream os = connection.getOutputStream()) {
+            byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
+            os.write(input, 0, input.length);
+        }
+
+        int responseCode = connection.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_CREATED) {
+            System.out.println("File uploaded successfully.");
+        } else {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getErrorStream()))) {
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = in.readLine()) != null) {
+                    response.append(line);
+                }
+                throw new IOException("Failed to upload file: " + response.toString());
+            }
+        }
+    }
 
     private static int getSubscriptionIndexByVNetName(String[] subscriptionIds, String vnetName) {
         // Find the subscription index associated with the VNet name
