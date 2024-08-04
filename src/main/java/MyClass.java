@@ -13,57 +13,33 @@ import java.util.Map;
 public class MyClass extends HttpServlet {
 
     private static final String GITHUB_API_URL = "https://api.github.com/repos/Bhuvana-1500/webalz1/contents/";
-    private static final String GITHUB_TOKEN = "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"; // Replace with your GitHub token
+    private static final String GITHUB_TOKEN = "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"; // Use environment variable for GitHub token
     private static Map<String, Integer> vnetNameToSubscriptionIndexMap = new HashMap<>();
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
         PrintWriter out = res.getWriter();
         res.setContentType("text/html");
+
+        // Retrieve parameters from the request
         String clientId = req.getParameter("clientId");
         String clientSecret = req.getParameter("clientSecret");
         String tenantId = req.getParameter("tenantId");
         String principleId = req.getParameter("principleid");
 
+        // Retrieve management group names
+        int numPolicyMgmtGroups = getIntParameter(req, "numPolicyMgmtGroups", 0);
+        String[] mgNamesp = getStringArrayParameter(req, "mgName", numPolicyMgmtGroups);
 
-        String numPolicyMgmtGroupsStr = req.getParameter("numPolicyMgmtGroups");
-        int numPolicyMgmtGroups = (numPolicyMgmtGroupsStr != null && !numPolicyMgmtGroupsStr.isEmpty()) ? Integer.parseInt(numPolicyMgmtGroupsStr) : 0;
-        
-        // Retrieve the management group names
-        String[] mgNamesp = new String[numPolicyMgmtGroups];
-        for (int i = 0; i < numPolicyMgmtGroups; i++) {
-            mgNamesp[i] = req.getParameter("mgName" + i);
-        }
+        // Retrieve management groups
+        int numManagementGroups = getIntParameter(req, "numManagementGroups");
+        String[] mgNames = getStringArrayParameter(req, "mgName", numManagementGroups);
+        String[] mgDisplayNames = getStringArrayParameter(req, "mgDisplayName", numManagementGroups);
+        String[] mgSubscriptionIds = getStringArrayParameter(req, "mgSubscriptionIds", numManagementGroups);
 
-        // Management Groups
-        String numManagementGroupsStr = req.getParameter("numManagementGroups");
-        if (numManagementGroupsStr == null) {
-            out.println("Number of management groups is missing.");
-            return;
-        }
-        int numManagementGroups = Integer.parseInt(numManagementGroupsStr);
-        String[] mgNames = new String[numManagementGroups];
-        String[] mgDisplayNames = new String[numManagementGroups];
-        String[] mgSubscriptionIds = new String[numManagementGroups];
-
-        for (int i = 0; i < numManagementGroups; i++) {
-            mgNames[i] = req.getParameter("mgName" + i);
-            mgDisplayNames[i] = req.getParameter("mgDisplayName" + i);
-            mgSubscriptionIds[i] = req.getParameter("mgSubscriptionIds" + i);
-
-            if (mgNames[i] == null || mgDisplayNames[i] == null || mgSubscriptionIds[i] == null) {
-                out.println("Management group " + i + " information is missing.");
-                return;
-            }
-        }
-
-        // Subscriptions and Resource Groups
-        String numSubscriptionsStr = req.getParameter("numSubscriptions");
-        if (numSubscriptionsStr == null) {
-            out.println("Number of subscriptions is missing.");
-            return;
-        }
-        int numSubscriptions = Integer.parseInt(numSubscriptionsStr);
-        String[] subscriptionIds = new String[numSubscriptions];
+        // Retrieve subscriptions and resource groups
+        int numSubscriptions = getIntParameter(req, "numSubscriptions");
+        String[] subscriptionIds = getStringArrayParameter(req, "subscriptionId", numSubscriptions);
         int[] numResourceGroups = new int[numSubscriptions];
         String[][] rgNames = new String[numSubscriptions][];
         String[][] rgLocations = new String[numSubscriptions][];
@@ -75,15 +51,9 @@ public class MyClass extends HttpServlet {
         String[][][][] subnetAddressSpaces = new String[numSubscriptions][][][];
 
         for (int i = 0; i < numSubscriptions; i++) {
-            subscriptionIds[i] = req.getParameter("subscriptionId" + i);
-            if (subscriptionIds[i] == null || subscriptionIds[i].isEmpty()) {
-                out.println("Subscription ID " + i + " is missing or empty.");
-                return;
-            }
-
-            numResourceGroups[i] = Integer.parseInt(req.getParameter("numResourceGroups" + i));
-            rgNames[i] = new String[numResourceGroups[i]];
-            rgLocations[i] = new String[numResourceGroups[i]];
+            numResourceGroups[i] = getIntParameter(req, "numResourceGroups" + i);
+            rgNames[i] = getStringArrayParameter(req, "rgName" + i + "_", numResourceGroups[i]);
+            rgLocations[i] = getStringArrayParameter(req, "rgLocation" + i + "_", numResourceGroups[i]);
             numVNets[i] = new int[numResourceGroups[i]];
             vnetNames[i] = new String[numResourceGroups[i]][];
             vnetAddressSpaces[i] = new String[numResourceGroups[i]][];
@@ -92,38 +62,19 @@ public class MyClass extends HttpServlet {
             subnetAddressSpaces[i] = new String[numResourceGroups[i]][][];
 
             for (int j = 0; j < numResourceGroups[i]; j++) {
-                rgNames[i][j] = req.getParameter("rgName" + i + "_" + j);
-                rgLocations[i][j] = req.getParameter("rgLocation" + i + "_" + j);
-
-                if (rgNames[i][j] == null || rgLocations[i][j] == null) {
-                    out.println("Resource group " + j + " for subscription " + i + " information is missing.");
-                    return;
-                }
-
-                numVNets[i][j] = Integer.parseInt(req.getParameter("numVNets" + i + "_" + j));
-                vnetNames[i][j] = new String[numVNets[i][j]];
-                vnetAddressSpaces[i][j] = new String[numVNets[i][j]];
+                numVNets[i][j] = getIntParameter(req, "numVNets" + i + "_" + j);
+                vnetNames[i][j] = getStringArrayParameter(req, "vnetName" + i + "_" + j + "_", numVNets[i][j]);
+                vnetAddressSpaces[i][j] = getStringArrayParameter(req, "vnetAddressSpace" + i + "_" + j + "_", numVNets[i][j]);
                 numSubnets[i][j] = new int[numVNets[i][j]];
                 subnetNames[i][j] = new String[numVNets[i][j]][];
                 subnetAddressSpaces[i][j] = new String[numVNets[i][j]][];
 
                 for (int k = 0; k < numVNets[i][j]; k++) {
-                    vnetNames[i][j][k] = req.getParameter("vnetName" + i + "_" + j + "_" + k);
-                    vnetAddressSpaces[i][j][k] = req.getParameter("vnetAddressSpace" + i + "_" + j + "_" + k);
-                    numSubnets[i][j][k] = Integer.parseInt(req.getParameter("numSubnets" + i + "_" + j + "_" + k));
-
-                    if (vnetNames[i][j][k] == null || vnetAddressSpaces[i][j][k] == null) {
-                        out.println("VNet " + k + " for resource group " + j + " in subscription " + i + " information is missing.");
-                        return;
-                    }
-
-                    subnetNames[i][j][k] = new String[numSubnets[i][j][k]];
-                    subnetAddressSpaces[i][j][k] = new String[numSubnets[i][j][k]];
+                    numSubnets[i][j][k] = getIntParameter(req, "numSubnets" + i + "_" + j + "_" + k);
+                    subnetNames[i][j][k] = getStringArrayParameter(req, "subnetName" + i + "_" + j + "_" + k + "_", numSubnets[i][j][k]);
+                    subnetAddressSpaces[i][j][k] = getStringArrayParameter(req, "subnetAddressSpace" + i + "_" + j + "_" + k + "_", numSubnets[i][j][k]);
 
                     for (int l = 0; l < numSubnets[i][j][k]; l++) {
-                        subnetNames[i][j][k][l] = req.getParameter("subnetName" + i + "_" + j + "_" + k + "_" + l);
-                        subnetAddressSpaces[i][j][k][l] = req.getParameter("subnetAddressSpace" + i + "_" + j + "_" + k + "_" + l);
-
                         if (subnetNames[i][j][k][l] == null || subnetAddressSpaces[i][j][k][l] == null) {
                             out.println("Subnet " + l + " for VNet " + k + " in resource group " + j + " in subscription " + i + " information is missing.");
                             return;
@@ -134,33 +85,20 @@ public class MyClass extends HttpServlet {
                     vnetNameToSubscriptionIndexMap.put(vnetNames[i][j][k], i);
                 }
             }
-            
         }
 
         // Peering VNets
-        int numPeeringVNets =0;
-        String numPeeringVNetsStr = req.getParameter("numPeeringVNets");
-        if (numPeeringVNetsStr != null) {
-            
-        numPeeringVNets = Integer.parseInt(numPeeringVNetsStr);
-        }
+        int numPeeringVNets = getIntParameter(req, "numPeeringVNets", 0);
         String hubVNetName = req.getParameter("hubVNetName");
-        String[] hubToSpokeVNetNames = new String[numPeeringVNets];
-        String[] spokeVNetNames = new String[numPeeringVNets];
-        String[] spokeToHubVNetNames = new String[numPeeringVNets];
-        
-
-        for (int p = 0; p < numPeeringVNets; p++) {
-            hubToSpokeVNetNames[p] = req.getParameter("hubToSpokeVNetName" + p);
-            spokeVNetNames[p] = req.getParameter("spokeVNetName" + p);
-            spokeToHubVNetNames[p] = req.getParameter("spokeToHubVNetName" + p);
-        }
+        String[] hubToSpokeVNetNames = getStringArrayParameter(req, "hubToSpokeVNetName", numPeeringVNets);
+        String[] spokeVNetNames = getStringArrayParameter(req, "spokeVNetName", numPeeringVNets);
+        String[] spokeToHubVNetNames = getStringArrayParameter(req, "spokeToHubVNetName", numPeeringVNets);
 
         // Generate Terraform files
         try {
             out.println("done");
             createTerraformMainFile(mgNames, mgDisplayNames, mgSubscriptionIds, subscriptionIds, rgNames, rgLocations, numVNets, vnetNames, vnetAddressSpaces, numSubnets, subnetNames, subnetAddressSpaces, clientId, clientSecret, tenantId, numPeeringVNets, hubVNetName, hubToSpokeVNetNames, spokeVNetNames, spokeToHubVNetNames, mgNamesp, numPolicyMgmtGroups, principleId);
-            
+
             // Upload file to GitHub
             File terraformFile = new File("terraform/main.tf");
             uploadFileToGitHub("terraform/main.tf", terraformFile);
@@ -169,6 +107,22 @@ public class MyClass extends HttpServlet {
         }
     }
 
+    private int getIntParameter(HttpServletRequest req, String paramName) {
+        return getIntParameter(req, paramName, -1);
+    }
+
+    private int getIntParameter(HttpServletRequest req, String paramName, int defaultValue) {
+        String param = req.getParameter(paramName);
+        return (param != null && !param.isEmpty()) ? Integer.parseInt(param) : defaultValue;
+    }
+
+    private String[] getStringArrayParameter(HttpServletRequest req, String baseParamName, int length) {
+        String[] values = new String[length];
+        for (int i = 0; i < length; i++) {
+            values[i] = req.getParameter(baseParamName + i);
+        }
+        return values;
+    }
 
 private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, String[] mgSubscriptionIds, 
                                       String[] subscriptionIds, String[][] rgNames, String[][] rgLocations, 
@@ -324,38 +278,41 @@ private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, 
 }
 
 private void uploadFileToGitHub(String filePath, File file) throws IOException {
-    String fileContent = new String(java.nio.file.Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-    String encodedContent = Base64.getEncoder().encodeToString(fileContent.getBytes(StandardCharsets.UTF_8));
+    String repoPath = "terraform/main.tf";
+    String apiUrl = GITHUB_API_URL + repoPath;
 
-    URL url = new URL(GITHUB_API_URL + filePath);
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-    connection.setRequestMethod("PUT");
-    connection.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
-    connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
-    connection.setDoOutput(true);
+    // Read the file content
+    byte[] fileContent = java.nio.file.Files.readAllBytes(file.toPath());
+    String base64Content = Base64.getEncoder().encodeToString(fileContent);
 
-    String requestBody = "{"
-            + "\"message\": \"Upload Terraform configuration\","
-            + "\"content\": \"" + encodedContent + "\""
-            + "}";
+    // Prepare the request
+    URL url = new URL(apiUrl);
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("PUT");
+    conn.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
+    conn.setRequestProperty("Content-Type", "application/json");
+    conn.setDoOutput(true);
 
-    try (OutputStream os = connection.getOutputStream()) {
+    String requestBody = String.format("{\"message\": \"Add Terraform main.tf file\", \"content\": \"%s\"}",
+            base64Content);
+    try (OutputStream os = conn.getOutputStream()) {
         os.write(requestBody.getBytes(StandardCharsets.UTF_8));
     }
 
-    int responseCode = connection.getResponseCode();
-    if (responseCode == HttpURLConnection.HTTP_CREATED || responseCode == HttpURLConnection.HTTP_OK) {
+    // Handle the response
+    int responseCode = conn.getResponseCode();
+    if (responseCode == HttpURLConnection.HTTP_OK) {
         System.out.println("File uploaded successfully.");
     } else {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-            String inputLine;
-            StringBuilder response = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            System.out.println("Failed to upload file. Response Code: " + responseCode);
-            System.out.println("Response: " + response.toString());
+        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+        String inputLine;
+        StringBuilder response = new StringBuilder();
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
         }
+        in.close();
+        System.out.println("Failed to upload file. Response code: " + responseCode);
+        System.out.println("Response: " + response.toString());
     }
 }
 
