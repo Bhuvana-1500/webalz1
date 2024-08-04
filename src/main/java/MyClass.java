@@ -160,169 +160,146 @@ public class MyClass extends HttpServlet {
     }
 
 
-private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, String[] mgSubscriptionIds, String[] subscriptionIds, String[][] rgNames, String[][] rgLocations, int[][] numVNets, String[][][] vnetNames, String[][][] vnetAddressSpaces, int[][][] numSubnets, String[][][][] subnetNames, String[][][][] subnetAddressSpaces, String clientId, String clientSecret, String tenantId, int numPeeringVNets, String hubVNetName, String[] hubToSpokeVNetNames, String[] spokeVNetNames, String[] spokeToHubVNetNames, String[] mgNamesp, int numPolicyMgmtGroups, String principleId) throws IOException {
-        File terraformDir = new File("terraform");
-        if (!terraformDir.exists()) {
-            terraformDir.mkdir();
-        }
-    
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("terraform/main.tf"))) {
-            
-            int s=0;
-            writer.write("terraform {\n");
-            writer.write("  required_providers {\n");
-            writer.write("    azurerm = {\n");
-            writer.write("      source  = \"hashicorp/azurerm\"\n");
-            writer.write("      version = \"3.106.1\"\n");
-            writer.write("    }\n");
-            writer.write("  }\n");
-            writer.write("}\n\n");
-    
-            writer.write("provider \"azurerm\" {\n");
-            writer.write("  features {}\n");
-            writer.write("}\n\n");
-    
-        
+private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, String[] mgSubscriptionIds, 
+                                      String[] subscriptionIds, String[][] rgNames, String[][] rgLocations, 
+                                      int[][] numVNets, String[][][] vnetNames, String[][][] vnetAddressSpaces, 
+                                      int[][][] numSubnets, String[][][][] subnetNames, String[][][][] subnetAddressSpaces, 
+                                      String clientId, String clientSecret, String tenantId, int numPeeringVNets, 
+                                      String hubVNetName, String[] hubToSpokeVNetNames, String[] spokeVNetNames, 
+                                      String[] spokeToHubVNetNames, String[] mgNamesp, int numPolicyMgmtGroups, 
+                                      String principleId) throws IOException {
+    File terraformDir = new File("terraform");
+    if (!terraformDir.exists()) {
+        terraformDir.mkdir();
+    }
 
-            for (int i = 0; i < subscriptionIds.length; i++) {
-                writer.write("provider \"azurerm\" {\n");
-                writer.write("  alias           = \"provider" + i + "\"\n");
-                writer.write("  subscription_id = \"" + subscriptionIds[i] + "\"\n");
-                writer.write("  client_id       = \"" + clientId + "\"\n");
-                writer.write("  client_secret   = \"" + clientSecret + "\"\n");
-                writer.write("  tenant_id       = \"" + tenantId + "\"\n");
-                writer.write("  features        {}\n");
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter("terraform/main.tf"))) {
+        writer.write("terraform {\n");
+        writer.write("  required_providers {\n");
+        writer.write("    azurerm = {\n");
+        writer.write("      source  = \"hashicorp/azurerm\"\n");
+        writer.write("      version = \"3.106.1\"\n");
+        writer.write("    }\n");
+        writer.write("  }\n");
+        writer.write("}\n\n");
+
+        writer.write("provider \"azurerm\" {\n");
+        writer.write("  features {}\n");
+        writer.write("}\n\n");
+
+        for (int i = 0; i < subscriptionIds.length; i++) {
+            writer.write("provider \"azurerm\" {\n");
+            writer.write("  alias           = \"provider" + i + "\"\n");
+            writer.write("  subscription_id = \"" + subscriptionIds[i] + "\"\n");
+            writer.write("  client_id       = \"" + clientId + "\"\n");
+            writer.write("  client_secret   = \"" + clientSecret + "\"\n");
+            writer.write("  tenant_id       = \"" + tenantId + "\"\n");
+            writer.write("  features        {}\n");
+            writer.write("}\n\n");
+        }
+
+        for (int i = 0; i < mgNames.length; i++) {
+            writer.write("resource \"azurerm_management_group\" \"" + mgNames[i] + "\" {\n");
+            writer.write("    name = \"" + mgNames[i] + "\"\n");
+            writer.write("    display_name = \"" + mgDisplayNames[i] + "\"\n");
+            if (mgNames[i] != null && mgSubscriptionIds[i] != null) {
+                writer.write("    subscription_ids = [");
+                String[] subscriptionIdList = mgSubscriptionIds[i].split(",");
+                for (int j = 0; j < subscriptionIdList.length; j++) {
+                    writer.write("\"" + subscriptionIdList[j].trim() + "\"");
+                    if (j < subscriptionIdList.length - 1) {
+                        writer.write(", ");
+                    }
+                }
+                writer.write("]\n");
+            }
+            writer.write("    provider = azurerm.provider0\n");
+            writer.write("}\n");
+        }
+
+        for (int i = 0; i < subscriptionIds.length; i++) {
+            for (int j = 0; j < rgNames[i].length; j++) {
+                writer.write("resource \"azurerm_resource_group\" \"" + rgNames[i][j] + "\" {\n");
+                writer.write("  name     = \"" + rgNames[i][j] + "\"\n");
+                writer.write("  location = \"" + rgLocations[i][j] + "\"\n");
+                writer.write("  provider = azurerm.provider" + i + "\n");
                 writer.write("}\n\n");
             }
-
-            for (int i = 0; i < mgNames.length; i++) {
-    // Write the beginning of the resource block
-    writer.write("resource \"azurerm_management_group\" \"" + mgNames[i] + "\" {\n");
-    writer.write("    name = \"" + mgNames[i] + "\"\n");
-    writer.write("    display_name = \"" + mgDisplayNames[i] + "\"\n");
-    if (mgNames[i]!=null && mgSubscriptionIds[i]!=null){
-    writer.write("    subscription_ids = [");
-
-    // Writing subscription IDs for the current management group
-    String[] subscriptionIdList = mgSubscriptionIds[i].split(",");
-    for (int j = 0; j < subscriptionIdList.length; j++) {
-        writer.write("\"" + subscriptionIdList[j].trim() + "\"");
-        if (j < subscriptionIdList.length - 1) {
-            writer.write(", ");
         }
-    }
-    writer.write("]\n");
-}
 
-    // Correctly write the provider line
-    writer.write("    provider = azurerm.provider0\n");
-
-    // Close the resource block
-    writer.write("}\n");
-}
-    
-            
-    
-            // Generate provider blocks and resource groups for each subscription
-            
-    
-            // Declare all resource groups first
-            for (int i = 0; i < subscriptionIds.length; i++) {
-                for (int j = 0; j < rgNames[i].length; j++) {
-                    writer.write("resource \"azurerm_resource_group\" \"" + rgNames[i][j] + "\" {\n");
-                    writer.write("  name     = \"" + rgNames[i][j] + "\"\n");
-                    writer.write("  location = \"" + rgLocations[i][j] + "\"\n");
-                    writer.write("  provider = azurerm.provider" + i + "\n");
+        for (int i = 0; i < subscriptionIds.length; i++) {
+            for (int j = 0; j < rgNames[i].length; j++) {
+                for (int k = 0; k < numVNets[i][j]; k++) {
+                    writer.write("resource \"azurerm_virtual_network\" \"" + vnetNames[i][j][k] + "\" {\n");
+                    writer.write("  name                = \"" + vnetNames[i][j][k] + "\"\n");
+                    writer.write("  address_space       = [\"" + vnetAddressSpaces[i][j][k] + "\"]\n");
+                    writer.write("  location            = \"" + rgLocations[i][j] + "\"\n");
+                    writer.write("  resource_group_name = azurerm_resource_group." + rgNames[i][j] + ".name\n");
+                    writer.write("  provider            = azurerm.provider" + i + "\n");
                     writer.write("}\n\n");
                 }
             }
-            
-    
-            // Declare all virtual networks
-            for (int i = 0; i < subscriptionIds.length; i++) {
-                for (int j = 0; j < rgNames[i].length; j++) {
-                    for (int k = 0; k < numVNets[i][j]; k++) {
-                        writer.write("resource \"azurerm_virtual_network\" \"" + vnetNames[i][j][k] + "\" {\n");
-                        writer.write("  name                = \"" + vnetNames[i][j][k] + "\"\n");
-                        writer.write("  address_space       = [\"" + vnetAddressSpaces[i][j][k] + "\"]\n");
-                        writer.write("  location            = \"" + rgLocations[i][j] + "\"\n");
-                        writer.write("  resource_group_name = azurerm_resource_group." + rgNames[i][j] + ".name\n");
-                        writer.write("  provider            = azurerm.provider" + i + "\n");
+        }
+
+        for (int i = 0; i < subscriptionIds.length; i++) {
+            for (int j = 0; j < rgNames[i].length; j++) {
+                for (int k = 0; k < numVNets[i][j]; k++) {
+                    for (int l = 0; l < numSubnets[i][j][k]; l++) {
+                        writer.write("resource \"azurerm_subnet\" \"" + subnetNames[i][j][k][l] + "\" {\n");
+                        writer.write("  name                 = \"" + subnetNames[i][j][k][l] + "\"\n");
+                        writer.write("  resource_group_name  = azurerm_resource_group." + rgNames[i][j] + ".name\n");
+                        writer.write("  virtual_network_name = azurerm_virtual_network." + vnetNames[i][j][k] + ".name\n");
+                        writer.write("  address_prefixes     = [\"" + subnetAddressSpaces[i][j][k][l] + "\"]\n");
+                        writer.write("  provider             = azurerm.provider" + i + "\n");
                         writer.write("}\n\n");
                     }
                 }
             }
-            
-    
-            // Declare all subnets
-            for (int i = 0; i < subscriptionIds.length; i++) {
-                for (int j = 0; j < rgNames[i].length; j++) {
-                    for (int k = 0; k < numVNets[i][j]; k++) {
-                        for (int l = 0; l < numSubnets[i][j][k]; l++) {
-                            writer.write("resource \"azurerm_subnet\" \"" + subnetNames[i][j][k][l] + "\" {\n");
-                            writer.write("  name                 = \"" + subnetNames[i][j][k][l] + "\"\n");
-                            writer.write("  resource_group_name  = azurerm_resource_group." + rgNames[i][j] + ".name\n");
-                            writer.write("  virtual_network_name = azurerm_virtual_network." + vnetNames[i][j][k] + ".name\n");
-                            writer.write("  address_prefixes     = [\"" + subnetAddressSpaces[i][j][k][l] + "\"]\n");
-                            writer.write("  provider             = azurerm.provider" + i + "\n");
-                            writer.write("}\n\n");
+        }
 
-                        }
-                    }
-                }
+        for (int p = 0; p < numPeeringVNets; p++) {
+            if (!hubVNetName.equals(spokeVNetNames[p])) {
+                writer.write("resource \"azurerm_virtual_network_peering\" \"" + hubVNetName + "_to_" + spokeVNetNames[p] + "\" {\n");
+                writer.write("  provider = azurerm.provider" + getSubscriptionIndexByVNetName(subscriptionIds, hubVNetName) + "\n");
+                writer.write("  name                = \"" + hubToSpokeVNetNames[p] + "\"\n");
+                writer.write("  resource_group_name = azurerm_virtual_network." + hubVNetName + ".resource_group_name\n");
+                writer.write("  virtual_network_name = \"" + hubVNetName + "\"\n");
+                writer.write("  remote_virtual_network_id = azurerm_virtual_network." + spokeVNetNames[p] + ".id\n");
+                writer.write("  allow_virtual_network_access = true\n");
+                writer.write("  allow_forwarded_traffic = true\n");
+                writer.write("  allow_gateway_transit = false\n");
+                writer.write("  use_remote_gateways = false\n");
+                writer.write("}\n\n");
             }
-   
-            for (int p = 0; p < numPeeringVNets; p++) {
-                
-                // Print values to verify they are as expected
-                
+        }
 
-                // Avoid self-peering by ensuring hubVNetName and spokeVNetNames[p] are different
-                if (!hubVNetName.equals(spokeVNetNames[p])) {
-                    writer.write("resource \"azurerm_virtual_network_peering\" \"" + hubVNetName + "_to_" + spokeVNetNames[p] + "\" {\n");
-                    writer.write("  provider = azurerm.provider" + getSubscriptionIndexByVNetName(subscriptionIds, hubVNetName) + "\n");
-                    writer.write("  name                = \"" + hubToSpokeVNetNames[p] + "\"\n");
-                    writer.write("  resource_group_name = azurerm_virtual_network." + hubVNetName + ".resource_group_name\n");
-                    writer.write("  virtual_network_name = \"" + hubVNetName + "\"\n");
-                    writer.write("  remote_virtual_network_id = azurerm_virtual_network." + spokeVNetNames[p] + ".id\n");
-                    writer.write("  allow_virtual_network_access = true\n");
-                    writer.write("  allow_forwarded_traffic = true\n");
-                    writer.write("  allow_gateway_transit = false\n");
-                    writer.write("  use_remote_gateways = false\n");
-                    writer.write("}\n\n");
-
-                    writer.write("resource \"azurerm_virtual_network_peering\" \"" + spokeVNetNames[p] + "_to_" + hubVNetName + "\" {\n");
-                    writer.write("  provider = azurerm.provider" + getSubscriptionIndexByVNetName(subscriptionIds, spokeVNetNames[p]) + "\n");
-                    writer.write("  name                = \"" + spokeToHubVNetNames[p] + "\"\n");
-                    writer.write("  resource_group_name = azurerm_virtual_network." + spokeVNetNames[p] + ".resource_group_name\n");
-                    writer.write("  virtual_network_name = \"" + spokeVNetNames[p] + "\"\n");
-                    writer.write("  remote_virtual_network_id = azurerm_virtual_network." + hubVNetName + ".id\n");
-                    writer.write("  allow_virtual_network_access = true\n");
-                    writer.write("  allow_forwarded_traffic = true\n");
-                    writer.write("  allow_gateway_transit = false\n");
-                    writer.write("  use_remote_gateways = false\n");
-                    writer.write("}\n\n");
-
-                    // Set the flag to true after writing the first set of peerings
-                    
-                } else {
-                    System.out.println("Skipping peering because hub and spoke VNet names are the same: " + hubVNetName + " and " + spokeVNetNames[p]);
-                }
-            }    
-            
-
-            for (int k = 0; k < numPolicyMgmtGroups ; k++) {
-            writer.write("resource \"azurerm_management_group_policy_assignment\" \"policyassignment"+ k +"\" {\n");
-            writer.write("  for_each = { for p in csvdecode(file(\"${path.module}/Policy.csv\")): p.displayname => p }\n");
-            writer.write("  \n");
-            writer.write("  name                  = substr(replace(each.key, \" \", \"-\"), 0, 24)\n");
-            writer.write("  display_name          = each.value.displayname\n");
-            writer.write("  policy_definition_id  = each.value.policyid\n");
-            writer.write("  management_group_id   = azurerm_management_group."+mgNamesp[k]+".id\n");
-            writer.write("}\n\n");
+        for (int p = 0; p < hubToSpokeVNetNames.length; p++) {
+            if (!spokeVNetNames[p].equals(hubVNetName)) {
+                writer.write("resource \"azurerm_virtual_network_peering\" \"" + spokeVNetNames[p] + "_to_" + hubVNetName + "\" {\n");
+                writer.write("  provider = azurerm.provider" + getSubscriptionIndexByVNetName(subscriptionIds, spokeVNetNames[p]) + "\n");
+                writer.write("  name                = \"" + spokeToHubVNetNames[p] + "\"\n");
+                writer.write("  resource_group_name = azurerm_virtual_network." + spokeVNetNames[p] + ".resource_group_name\n");
+                writer.write("  virtual_network_name = \"" + spokeVNetNames[p] + "\"\n");
+                writer.write("  remote_virtual_network_id = azurerm_virtual_network." + hubVNetName + ".id\n");
+                writer.write("  allow_virtual_network_access = true\n");
+                writer.write("  allow_forwarded_traffic = true\n");
+                writer.write("  allow_gateway_transit = false\n");
+                writer.write("  use_remote_gateways = false\n");
+                writer.write("}\n\n");
             }
+        }
 
-            for (int k = 0; k < numPolicyMgmtGroups ; k++) {
+        // Policy assignments (complete this section as needed)
+        for (int i = 0; i < numPolicyMgmtGroups; i++) {
+            writer.write("resource \"azurerm_policy_assignment\" \"" + mgNamesp[i] + "\" {\n");
+            writer.write("  name                 = \"" + mgNamesp[i] + "\"\n");
+            writer.write("  scope                = azurerm_management_group." + mgNamesp[i] + ".id\n");
+            writer.write("  policy_definition_id = azurerm_policy_definition.example.id\n"); // Replace with actual policy ID
+            writer.write("  provider             = azurerm.provider0\n");
+            writer.write("}\n");
+        }
+
+        for (int k = 0; k < numPolicyMgmtGroups ; k++) {
                 writer.write("resource \"azurerm_role_assignment\" \"example" + k + "\" {\n");
                 writer.write("  scope                = azurerm_management_group." + mgNamesp[k]  + ".id\n");
                 writer.write("  role_definition_name = \"Owner\"\n");
@@ -330,11 +307,9 @@ private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, 
                 writer.write("}\n\n");
             }
 
-        
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        writer.flush();
     }
+}
 
     private static int getSubscriptionIndexByVNetName(String[] subscriptionIds, String vnetName) {
         // Find the subscription index associated with the VNet name
