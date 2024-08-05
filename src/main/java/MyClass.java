@@ -271,16 +271,16 @@ public class MyClass extends HttpServlet {
             }
         }
 
-        for (int k = 0; k < numPolicyMgmtGroups; k++) {
-            writer.write("resource \"azurerm_management_group_policy_assignment\" \"policyassignment" + k + "\" {\n");
+        for (int k = 0; k < numPolicyMgmtGroups ; k++) {
+            writer.write("resource \"azurerm_management_group_policy_assignment\" \"policyassignment"+ k +"\" {\n");
             writer.write("  for_each = { for p in csvdecode(file(\"${path.module}/Policy.csv\")): p.displayname => p }\n");
+            writer.write("  \n");
             writer.write("  name                  = substr(replace(each.key, \" \", \"-\"), 0, 24)\n");
             writer.write("  display_name          = each.value.displayname\n");
             writer.write("  policy_definition_id  = each.value.policyid\n");
-            writer.write("  management_group_id   = azurerm_management_group.mgmt" + k + ".id\n");
-            writer.write("  policy_definition_name = each.value.policyname\n");
+            writer.write("  management_group_id   = azurerm_management_group."+mgNamesp[k]+".id\n");
             writer.write("}\n\n");
-        }
+            }
 
         for (int k = 0; k < numPolicyMgmtGroups ; k++) {
                 writer.write("resource \"azurerm_role_assignment\" \"example" + k + "\" {\n");
