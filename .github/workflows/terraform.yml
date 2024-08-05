@@ -24,21 +24,19 @@ jobs:
           sudo apt-get install -y curl
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
-      - name: Create login script
+      - name: Extract Azure credentials from main.tf
+        id: extract-vars
         run: |
-          echo '#!/bin/bash' > login.sh
-          echo 'echo "AZURE_CLIENT_ID: $AZURE_CLIENT_ID"' >> login.sh
-          echo 'echo "AZURE_CLIENT_SECRET: $AZURE_CLIENT_SECRET"' >> login.sh
-          echo 'echo "AZURE_TENANT_ID: $AZURE_TENANT_ID"' >> login.sh
-          echo 'az login --service-principal -u "$AZURE_CLIENT_ID" -p "$AZURE_CLIENT_SECRET" --tenant "$AZURE_TENANT_ID"' >> login.sh
-          chmod +x login.sh
+          export CLIENT_ID=$(grep -oP '(?<=client_id\s*=\s*").*(?=")' terraform/main.tf)
+          export CLIENT_SECRET=$(grep -oP '(?<=client_secret\s*=\s*").*(?=")' terraform/main.tf)
+          export TENANT_ID=$(grep -oP '(?<=tenant_id\s*=\s*").*(?=")' terraform/main.tf)
+          echo "CLIENT_ID=$CLIENT_ID" >> $GITHUB_ENV
+          echo "CLIENT_SECRET=$CLIENT_SECRET" >> $GITHUB_ENV
+          echo "TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
 
       - name: Log in to Azure CLI
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-        run: ./login.sh
+        run: |
+          az login --service-principal -u "$CLIENT_ID" -p "$CLIENT_SECRET" --tenant "$TENANT_ID"
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
@@ -46,19 +44,14 @@ jobs:
           terraform_version: 1.3.0  # Specify the version of Terraform to use
 
       - name: Set Terraform Variables and Initialize
-        env:
-          TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          TF_VAR_client_id: ${{ secrets.AZURE_CLIENT_ID }}
-          TF_VAR_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: terraform init
         working-directory: terraform
 
       - name: Apply Terraform Configuration
         env:
-          TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          TF_VAR_client_id: ${{ secrets.AZURE_CLIENT_ID }}
-          TF_VAR_client_secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          TF_VAR_tenant_id: ${{ env.TENANT_ID }}
+          TF_VAR_client_id: ${{ env.CLIENT_ID }}
+          TF_VAR_client_secret: ${{ env.CLIENT_SECRET }}
           TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         run: terraform apply -auto-approve
         working-directory: terraform
