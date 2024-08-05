@@ -106,194 +106,105 @@ public class MyClass extends HttpServlet {
 
             // Upload file to GitHub
             File terraformFile = new File("terraform/main.tf");
-            uploadFileToGitHub("terraform/main.tf", terraformFile);
+            uploadFileToGitHub(terraformFile, "main.tf");
+            out.println("done");
         } catch (Exception e) {
-            out.println("Error generating Terraform configuration: " + e.getMessage());
+            e.printStackTrace();
+            out.println("Error: " + e.getMessage());
         }
     }
 
-    private int getIntParameter(HttpServletRequest req, String paramName) {
-        return getIntParameter(req, paramName, -1);
+    private int getIntParameter(HttpServletRequest req, String name) {
+        String value = req.getParameter(name);
+        return value != null ? Integer.parseInt(value) : 0;
     }
 
-    private int getIntParameter(HttpServletRequest req, String paramName, int defaultValue) {
-        String param = req.getParameter(paramName);
-        return (param != null && !param.isEmpty()) ? Integer.parseInt(param) : defaultValue;
+    private int getIntParameter(HttpServletRequest req, String name, int defaultValue) {
+        String value = req.getParameter(name);
+        return value != null ? Integer.parseInt(value) : defaultValue;
     }
 
-    private String[] getStringArrayParameter(HttpServletRequest req, String baseParamName, int length) {
-        String[] values = new String[length];
-        for (int i = 0; i < length; i++) {
-            values[i] = req.getParameter(baseParamName + i);
+    private String[] getStringArrayParameter(HttpServletRequest req, String namePrefix, int count) {
+        String[] values = new String[count];
+        for (int i = 0; i < count; i++) {
+            values[i] = req.getParameter(namePrefix + i);
         }
         return values;
     }
 
-    private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, String[] mgSubscriptionIds, 
-                                         String[] subscriptionIds, String[][] rgNames, String[][] rgLocations, 
-                                         int[][] numVNets, String[][][] vnetNames, String[][][] vnetAddressSpaces, 
-                                         int[][][] numSubnets, String[][][][] subnetNames, String[][][][] subnetAddressSpaces, 
-                                         String clientId, String clientSecret, String tenantId, int numPeeringVNets, 
-                                         String hubVNetName, String[] hubToSpokeVNetNames, String[] spokeVNetNames, 
-                                         String[] spokeToHubVNetNames, String[] mgNamesp, int numPolicyMgmtGroups, 
-                                         String principleId) throws IOException {
-
-        File terraformDir = new File("terraform");
-        if (!terraformDir.exists()) {
-            terraformDir.mkdir();
-        }
-
+    private void createTerraformMainFile(String[] mgNames, String[] mgDisplayNames, String[] mgSubscriptionIds, String[] subscriptionIds,
+                                          String[][] rgNames, String[][] rgLocations, int[][] numVNets, String[][][] vnetNames,
+                                          String[][][] vnetAddressSpaces, int[][][] numSubnets, String[][][][] subnetNames,
+                                          String[][][][] subnetAddressSpaces, String clientId, String clientSecret, String tenantId,
+                                          int numPeeringVNets, String hubVNetName, String[] hubToSpokeVNetNames, String[] spokeVNetNames,
+                                          String[] spokeToHubVNetNames, String[] mgNamesp, int numPolicyMgmtGroups, String principleId) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("terraform/main.tf"))) {
             writer.write("provider \"azurerm\" {\n");
             writer.write("  features {}\n");
             writer.write("}\n\n");
 
-            for (int i = 0; i < subscriptionIds.length; i++) {
-                writer.write("provider \"azurerm\" {\n");
-                writer.write("  alias = \"subscription_" + i + "\"\n");
-                writer.write("  client_id = \"" + clientId + "\"\n");
-                writer.write("  client_secret = \"" + clientSecret + "\"\n");
-                writer.write("  tenant_id = \"" + tenantId + "\"\n");
-                writer.write("  subscription_id = \"" + subscriptionIds[i] + "\"\n");
-                writer.write("  features {}\n");
-                writer.write("}\n\n");
-            }
-
             for (int i = 0; i < mgNames.length; i++) {
-                writer.write("resource \"azurerm_management_group\" \"mg_" + i + "\" {\n");
-                writer.write("  display_name = \"" + mgDisplayNames[i] + "\"\n");
-                writer.write("  name = \"" + mgNames[i] + "\"\n");
+                writer.write(String.format("resource \"azurerm_management_group\" \"%s\" {\n", mgNames[i]));
+                writer.write(String.format("  display_name = \"%s\"\n", mgDisplayNames[i]));
+                writer.write(String.format("  subscription_ids = [\"%s\"]\n", mgSubscriptionIds[i]));
                 writer.write("}\n\n");
             }
 
             for (int i = 0; i < subscriptionIds.length; i++) {
+                writer.write(String.format("provider \"azurerm\" {\n  alias = \"sub%d\"\n  features {}\n  subscription_id = \"%s\"\n  client_id = \"%s\"\n  client_secret = \"%s\"\n  tenant_id = \"%s\"\n}\n\n",
+                                           i, subscriptionIds[i], clientId, clientSecret, tenantId));
                 for (int j = 0; j < rgNames[i].length; j++) {
-                    writer.write("resource \"azurerm_resource_group\" \"rg_" + i + "_" + j + "\" {\n");
-                    writer.write("  provider = azurerm.subscription_" + i + "\n");
-                    writer.write("  name = \"" + rgNames[i][j] + "\"\n");
-                    writer.write("  location = \"" + rgLocations[i][j] + "\"\n");
-                    writer.write("}\n\n");
-
+                    writer.write(String.format("resource \"azurerm_resource_group\" \"%s\" {\n  name = \"%s\"\n  location = \"%s\"\n  provider = azurerm.sub%d\n}\n\n",
+                                               rgNames[i][j], rgNames[i][j], rgLocations[i][j], i));
                     for (int k = 0; k < vnetNames[i][j].length; k++) {
-                        writer.write("resource \"azurerm_virtual_network\" \"vnet_" + i + "_" + j + "_" + k + "\" {\n");
-                        writer.write("  provider = azurerm.subscription_" + i + "\n");
-                        writer.write("  name = \"" + vnetNames[i][j][k] + "\"\n");
-                        writer.write("  address_space = [\"" + vnetAddressSpaces[i][j][k] + "\"]\n");
-                        writer.write("  location = azurerm_resource_group.rg_" + i + "_" + j + ".location\n");
-                        writer.write("  resource_group_name = azurerm_resource_group.rg_" + i + "_" + j + ".name\n");
-
-                        writer.write("  subnet {\n");
+                        writer.write(String.format("resource \"azurerm_virtual_network\" \"%s\" {\n  name = \"%s\"\n  address_space = [\"%s\"]\n  location = \"%s\"\n  resource_group_name = \"%s\"\n  provider = azurerm.sub%d\n}\n\n",
+                                                   vnetNames[i][j][k], vnetNames[i][j][k], vnetAddressSpaces[i][j][k], rgLocations[i][j], rgNames[i][j], i));
                         for (int l = 0; l < subnetNames[i][j][k].length; l++) {
-                            writer.write("    name = \"" + subnetNames[i][j][k][l] + "\"\n");
-                            writer.write("    address_prefix = \"" + subnetAddressSpaces[i][j][k][l] + "\"\n");
+                            writer.write(String.format("resource \"azurerm_subnet\" \"%s\" {\n  name = \"%s\"\n  address_prefix = \"%s\"\n  resource_group_name = \"%s\"\n  virtual_network_name = \"%s\"\n  provider = azurerm.sub%d\n}\n\n",
+                                                       subnetNames[i][j][k][l], subnetNames[i][j][k][l], subnetAddressSpaces[i][j][k][l], rgNames[i][j], vnetNames[i][j][k], i));
                         }
-                        writer.write("  }\n");
-                        writer.write("}\n\n");
                     }
                 }
             }
 
-            writer.write("resource \"azurerm_virtual_network_peering\" \"hub_to_spoke_peering\" {\n");
-            for (int i = 0; i < numPeeringVNets; i++) {
-                writer.write("  name = \"hub-to-spoke\"\n");
-                writer.write("  resource_group_name = azurerm_resource_group.rg_0_0.name\n");
-                writer.write("  virtual_network_name = azurerm_virtual_network.vnet_0_0_0.name\n");
-                writer.write("  remote_virtual_network_id = azurerm_virtual_network.vnet_" + vnetNameToSubscriptionIndexMap.get(spokeVNetNames[i]) + "_0_0.id\n");
-                writer.write("  allow_forwarded_traffic = true\n");
-                writer.write("  allow_gateway_transit = false\n");
-                writer.write("  use_remote_gateways = false\n");
-                writer.write("}\n\n");
-
-                writer.write("resource \"azurerm_virtual_network_peering\" \"spoke_to_hub_peering\" {\n");
-                writer.write("  name = \"spoke-to-hub\"\n");
-                writer.write("  resource_group_name = azurerm_resource_group.rg_0_0.name\n");
-                writer.write("  virtual_network_name = azurerm_virtual_network.vnet_" + vnetNameToSubscriptionIndexMap.get(spokeVNetNames[i]) + "_0_0.name\n");
-                writer.write("  remote_virtual_network_id = azurerm_virtual_network.vnet_0_0_0.id\n");
-                writer.write("  allow_forwarded_traffic = true\n");
-                writer.write("  allow_gateway_transit = false\n");
-                writer.write("  use_remote_gateways = false\n");
-                writer.write("}\n\n");
+            writer.write("output \"subscription_ids\" {\n  value = [\n");
+            for (String subscriptionId : subscriptionIds) {
+                writer.write(String.format("    \"%s\",\n", subscriptionId));
             }
+            writer.write("  ]\n}\n\n");
 
-            // Policy assignments (complete this section as needed)
-        for (int i = 0; i < numPolicyMgmtGroups; i++) {
-            writer.write("resource \"azurerm_policy_assignment\" \"" + mgNamesp[i] + "\" {\n");
-            writer.write("  name                 = \"" + mgNamesp[i] + "\"\n");
-            writer.write("  scope                = azurerm_management_group." + mgNamesp[i] + ".id\n");
-            writer.write("  policy_definition_id = azurerm_policy_definition.example.id\n"); // Replace with actual policy ID
-            writer.write("  provider             = azurerm.provider0\n");
-            writer.write("}\n");
+            writer.write("output \"resource_group_names\" {\n  value = [\n");
+            for (String[] rgNameArray : rgNames) {
+                for (String rgName : rgNameArray) {
+                    writer.write(String.format("    \"%s\",\n", rgName));
+                }
+            }
+            writer.write("  ]\n}\n\n");
         }
-
-        for (int k = 0; k < numPolicyMgmtGroups ; k++) {
-                writer.write("resource \"azurerm_role_assignment\" \"example" + k + "\" {\n");
-                writer.write("  scope                = azurerm_management_group." + mgNamesp[k]  + ".id\n");
-                writer.write("  role_definition_name = \"Owner\"\n");
-                writer.write("  principal_id         = \""+ principleId +"\"\n");
-                writer.write("}\n\n");
-            }
-
-        writer.flush();
     }
-}
-        
 
-    private void uploadFileToGitHub(String filePath, File file) throws IOException {
-        String url = GITHUB_API_URL + filePath;
-        String content = encodeFileToBase64(file);
-        String jsonPayload = "{\"message\": \"Upload Terraform file\", \"content\": \"" + content + "\"}";
+    private void uploadFileToGitHub(File file, String fileName) throws IOException {
+        byte[] fileBytes = Files.readAllBytes(file.toPath());
+        String base64File = Base64.getEncoder().encodeToString(fileBytes);
 
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        URL url = new URL(GITHUB_API_URL + fileName);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("PUT");
         connection.setRequestProperty("Authorization", "Bearer " + GITHUB_TOKEN);
-        connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
+        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
         connection.setDoOutput(true);
 
+        String payload = String.format("{\"message\": \"add %s\", \"content\": \"%s\"}", fileName, base64File);
         try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
+            byte[] input = payload.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
         }
 
         int responseCode = connection.getResponseCode();
         if (responseCode == HttpURLConnection.HTTP_CREATED || responseCode == HttpURLConnection.HTTP_OK) {
-            System.out.println("File uploaded successfully.");
+            System.out.println("File uploaded successfully to GitHub.");
         } else {
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                String responseLine;
-                    StringBuilder response = new StringBuilder();
-                    while ((responseLine = br.readLine()) != null) {
-                        response.append(responseLine.trim());
-                    }
-                    System.out.println("Error uploading file: " + response.toString());
-                }
-            }
+            System.out.println("Failed to upload file to GitHub. Response code: " + responseCode);
         }
-    
-
-    private String encodeFileToBase64(File file) throws IOException {
-        byte[] fileContent = java.nio.file.Files.readAllBytes(file.toPath());
-        return Base64.getEncoder().encodeToString(fileContent);
-    }
-
-    private static int getSubscriptionIndexByVNetName(String[] subscriptionIds, String vnetName) {
-        // Find the subscription index associated with the VNet name
-        Integer index = vnetNameToSubscriptionIndexMap.get(vnetName);
-        if (index == null) {
-            throw new IllegalArgumentException("VNet name " + vnetName + " is not associated with any subscription.");
-        }
-        return index;
-    }
-    
-    private static void executeTerraformCommand(String command) throws IOException, InterruptedException {
-        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
-        processBuilder.directory(new File("terraform"));
-        processBuilder.redirectErrorStream(true);
-        Process process = processBuilder.start();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
-        }
-        process.waitFor();
     }
 }
