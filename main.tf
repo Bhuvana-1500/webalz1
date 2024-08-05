@@ -53,6 +53,18 @@ resource "azurerm_resource_group" "rg1" {
   provider = azurerm.provider0
 }
 
+resource "azurerm_resource_group" "rg2" {
+  name     = "rg2"
+  location = "East US"
+  provider = azurerm.provider1
+}
+
+resource "azurerm_resource_group" "rg3" {
+  name     = "rg3"
+  location = "UK South"
+  provider = azurerm.provider1
+}
+
 resource "azurerm_virtual_network" "vnet1" {
   name                = "vnet1"
   address_space       = ["10.0.0.0/16"]
@@ -69,12 +81,28 @@ resource "azurerm_virtual_network" "vnet2" {
   provider            = azurerm.provider0
 }
 
+resource "azurerm_virtual_network" "vnet3" {
+  name                = "vnet3"
+  address_space       = ["10.2.0.0/16"]
+  location            = "East US"
+  resource_group_name = azurerm_resource_group.rg2.name
+  provider            = azurerm.provider1
+}
+
 resource "azurerm_subnet" "sub1" {
   name                 = "sub1"
   resource_group_name  = azurerm_resource_group.rg1.name
   virtual_network_name = azurerm_virtual_network.vnet1.name
   address_prefixes     = ["10.0.0.0/24"]
   provider             = azurerm.provider0
+}
+
+resource "azurerm_subnet" "sub2" {
+  name                 = "sub2"
+  resource_group_name  = azurerm_resource_group.rg2.name
+  virtual_network_name = azurerm_virtual_network.vnet3.name
+  address_prefixes     = ["10.2.0.0/24"]
+  provider             = azurerm.provider1
 }
 
 resource "azurerm_virtual_network_peering" "vnet1_to_vnet2" {
@@ -101,22 +129,46 @@ resource "azurerm_virtual_network_peering" "vnet2_to_vnet1" {
   use_remote_gateways = false
 }
 
+resource "azurerm_virtual_network_peering" "vnet1_to_vnet3" {
+  provider = azurerm.provider0
+  name                = "hub-to-spoke2"
+  resource_group_name = azurerm_virtual_network.vnet1.resource_group_name
+  virtual_network_name = "vnet1"
+  remote_virtual_network_id = azurerm_virtual_network.vnet3.id
+  allow_virtual_network_access = true
+  allow_forwarded_traffic = true
+  allow_gateway_transit = false
+  use_remote_gateways = false
+}
+
+resource "azurerm_virtual_network_peering" "vnet3_to_vnet1" {
+  provider = azurerm.provider1
+  name                = "spoke-to-hub2"
+  resource_group_name = azurerm_virtual_network.vnet3.resource_group_name
+  virtual_network_name = "vnet3"
+  remote_virtual_network_id = azurerm_virtual_network.vnet1.id
+  allow_virtual_network_access = true
+  allow_forwarded_traffic = true
+  allow_gateway_transit = false
+  use_remote_gateways = false
+}
+
 resource "azurerm_management_group_policy_assignment" "policyassignment0" {
   for_each = { for p in csvdecode(file("${path.module}/Policy.csv")): p.displayname => p }
+  
   name                  = substr(replace(each.key, " ", "-"), 0, 24)
   display_name          = each.value.displayname
   policy_definition_id  = each.value.policyid
-  management_group_id   = azurerm_management_group.mg0.id
-  policy_definition_name = each.value.policyname
+  management_group_id   = azurerm_management_group.mgmt1.id
 }
 
 resource "azurerm_management_group_policy_assignment" "policyassignment1" {
   for_each = { for p in csvdecode(file("${path.module}/Policy.csv")): p.displayname => p }
+  
   name                  = substr(replace(each.key, " ", "-"), 0, 24)
   display_name          = each.value.displayname
   policy_definition_id  = each.value.policyid
-  management_group_id   = azurerm_management_group.mg1.id
-  policy_definition_name = each.value.policyname
+  management_group_id   = azurerm_management_group.mgmt2.id
 }
 
 resource "azurerm_role_assignment" "example0" {
