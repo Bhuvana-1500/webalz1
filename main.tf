@@ -9,7 +9,7 @@ terraform {
 
 provider "azurerm" {
   features {}
-  subscription_id = "7572a8a8-2860-4fdb-90db-3e7a00753aa9"
+  subscription_id = "13ba43d9-3859-4c70-9f8d-182debaa038b"
   client_id       = "0d26f5b0-1c83-4b0b-af8d-ac3dbf8476cf"
   client_secret   = "SRS8Q~smnO~sFO2sykkNIJSTY.r4k-maLFt_caZU"
   tenant_id       = "30bf9f37-d550-4878-9494-1041656caf27"
@@ -17,7 +17,7 @@ provider "azurerm" {
 
 provider "azurerm" {
   alias           = "provider0"
-  subscription_id = "7572a8a8-2860-4fdb-90db-3e7a00753aa9"
+  subscription_id = "13ba43d9-3859-4c70-9f8d-182debaa038b"
   client_id       = "0d26f5b0-1c83-4b0b-af8d-ac3dbf8476cf"
   client_secret   = "SRS8Q~smnO~sFO2sykkNIJSTY.r4k-maLFt_caZU"
   tenant_id       = "30bf9f37-d550-4878-9494-1041656caf27"
@@ -37,7 +37,7 @@ resource "azurerm_management_group" "mgmt1" {
   name          = "mgmt1"
   display_name   = "mgmt1"
   subscription_ids = [
-    "7572a8a8-2860-4fdb-90db-3e7a00753aa9"
+    "13ba43d9-3859-4c70-9f8d-182debaa038b"
   ]
   provider = azurerm.provider0
 }
@@ -111,7 +111,7 @@ resource "azurerm_subnet" "sub2" {
 
 resource "azurerm_virtual_network_peering" "vnet1_to_vnet2" {
   provider = azurerm.provider0
-  name                = "hub-to-spoke11"
+  name                = "hub-to-spoke1"
   resource_group_name = azurerm_virtual_network.vnet1.resource_group_name
   virtual_network_name = "vnet1"
   remote_virtual_network_id = azurerm_virtual_network.vnet2.id
@@ -135,7 +135,7 @@ resource "azurerm_virtual_network_peering" "vnet2_to_vnet1" {
 
 resource "azurerm_virtual_network_peering" "vnet1_to_vnet3" {
   provider = azurerm.provider0
-  name                = "hub-to-spoke22"
+  name                = "hub-to-spoke2"
   resource_group_name = azurerm_virtual_network.vnet1.resource_group_name
   virtual_network_name = "vnet1"
   remote_virtual_network_id = azurerm_virtual_network.vnet3.id
