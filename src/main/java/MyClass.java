@@ -277,7 +277,7 @@ public class MyClass extends HttpServlet {
             writer.write("  name                  = substr(replace(each.key, \" \", \"-\"), 0, 24)\n");
             writer.write("  display_name          = each.value.displayname\n");
             writer.write("  policy_definition_id  = each.value.policyid\n");
-            writer.write("  management_group_id   = azurerm_management_group.mg" + k + ".id\n");
+            writer.write("  management_group_id   = azurerm_management_group.mgmt" + k + ".id\n");
             writer.write("  policy_definition_name = each.value.policyname\n");
             writer.write("}\n\n");
         }
