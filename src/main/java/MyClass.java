@@ -2,12 +2,15 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Base64;
 import javax.servlet.*;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.File;
+
 
 @WebServlet("/MyClass")
 public class MyClass extends HttpServlet {
