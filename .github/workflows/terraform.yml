@@ -1,36 +1,32 @@
-name: Terraform Deployment
+name: Move and Deploy Terraform Configuration
 
 on:
   push:
     paths:
-      - 'main.tf'  # Trigger the workflow when the main.tf file is created or updated
-  workflow_dispatch:  # Allows manual trigger from the GitHub Actions UI
-    inputs:
-      terraform_folder:
-        description: 'Folder containing Terraform configuration'
-        required: true
-        default: 'terraform'
-      terraform_vars:
-        description: 'Terraform variables in JSON format'
-        required: false
+      - 'main.tf'  # Trigger this workflow when main.tf is created or updated
 
 jobs:
-  terraform:
+  move-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Move main.tf to terraform folder
+        run: |
+          mkdir -p terraform
+          mv main.tf terraform/main.tf
       
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.3.0  # Specify the version of Terraform to use
-      
+
       - name: Initialize Terraform
         run: terraform init
-        working-directory: ${{ github.event.inputs.terraform_folder }}
+        working-directory: terraform
       
       - name: Apply Terraform Configuration
         run: terraform apply -auto-approve
-        working-directory: ${{ github.event.inputs.terraform_folder }}
+        working-directory: terraform
