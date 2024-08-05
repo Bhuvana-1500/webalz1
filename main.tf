@@ -92,6 +92,9 @@ resource "azurerm_management_group_policy_assignment" "policyassignment0" {
   policy_definition_name = each.value.policyname
 }
 
-output "management_group_ids" {
-  value = [for mg in azurerm_management_group.* : mg.id]
+resource "azurerm_role_assignment" "example0" {
+  scope                = azurerm_management_group.mgmt1.id
+  role_definition_name = "Owner"
+  principal_id         = "200ba991-de6c-43f2-89c7-3082c59f39a7"
 }
+
