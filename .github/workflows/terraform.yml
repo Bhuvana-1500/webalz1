@@ -1,0 +1,33 @@
+name: Terraform Deployment
+
+on:
+  workflow_dispatch:  # Allows manual trigger from the GitHub Actions UI
+    inputs:
+      terraform_folder:
+        description: 'Folder containing Terraform configuration'
+        required: true
+        default: 'terraform'
+      terraform_vars:
+        description: 'Terraform variables in JSON format'
+        required: false
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.3.0  # Specify the version of Terraform to use
+      
+      - name: Initialize Terraform
+        run: terraform init
+        working-directory: ${{ github.event.inputs.terraform_folder }}
+      
+      - name: Apply Terraform Configuration
+        run: terraform apply -auto-approve
+        working-directory: ${{ github.event.inputs.main.tf }}
