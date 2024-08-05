@@ -1,0 +1,15 @@
+﻿policyname,displayname,policyid
+SA_transferEnabled,Secure transfer to storage accounts should be enabled,/providers/Microsoft.Authorization/policyDefinitions/404c3081-a854-4457-ae30-26a93ef643f9
+DE_DB,Transparent Data Encryption on SQL databases should be enabled,/providers/Microsoft.Authorization/policyDefinitions/17k78e20-9358-41c9-923c-fb736d382a12
+Auditing_SQLSer,Auditing on SQL server should be enabled,/providers/Microsoft.Authorization/policyDefinitions/a6fb4358-5bf4-4ad7-ba82-2cd2f41ce5e9
+VPN_BasicSKU's,Azure VPN gateways should not use 'basic' SKU,/providers/Microsoft.Authorization/policyDefinitions/e345b6c3-24bd-4c93-9bbb-7e5e49a17b78
+EventHub_SEP,Event Hub should use a virtual network service endpoint,/providers/Microsoft.Authorization/policyDefinitions/d63edb4a-c612-454d-b47d-191a724fcbf0
+CR_SEP,ContainerRegistryVNetEndpoint,/providers/Microsoft.Authorization/policyDefinitions/c4857be7-912a-4c75-87e6-e30292bcdf78
+SQLServer_SEP,SQL Server should use a virtual network service endpoint,/providers/Microsoft.Authorization/policyDefinitions/ae5d2f14-d830-42b6-9899-df6cfe9c71a3
+SA_SEP,Storage Accounts should use a virtual network service endpoint,/providers/Microsoft.Authorization/policyDefinitions/60d21c4f-21a3-4d94-85f4-b924e6aeeda4
+GSub_NSG,NoGatewayNSG,/providers/Microsoft.Authorization/policyDefinitions/35f9c03a-cc27-418e-9c0c-539ff999d010
+AppService_SEP,App Service apps should use a virtual network service endpoint,/providers/Microsoft.Authorization/policyDefinitions/2d21331d-a4c2-4def-a9ad-ee4e1e023beb
+VM_DR,Audit virtual machines without disaster recovery configured,/providers/Microsoft.Authorization/policyDefinitions/0015ea4d-51ff-4ce3-8d8c-f3f8f0179a56
+SA_TrustMicrosoft,StorageAccessPolicy,/providers/Microsoft.Authorization/policyDefinitions/c9d007d0-c057-4772-b18c-01e546713bcd
+SQLServer_VA,Vulnerability assessment should be enabled on your SQL servers,/providers/Microsoft.Authorization/policyDefinitions/ef2a8f2a-b3d9-49cd-a8a8-9a3aaaf647d9
+SQLManaged_VA,SQLVulnerabilityAssessment,/providers/Microsoft.Authorization/policyDefinitions/1b7aa243-30e4-4c9e-bca8-d0d3022b634a
