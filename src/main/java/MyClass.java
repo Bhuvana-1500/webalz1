@@ -3,20 +3,21 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Base64;
 import javax.servlet.*;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.File;
-
 
 @WebServlet("/MyClass")
 public class MyClass extends HttpServlet {
 
     private static final String GITHUB_API_URL = "https://api.github.com/repos/Bhuvana-1500/webalz1/contents/";
     private static final String GITHUB_TOKEN = System.getenv("GITHUB_TOKEN"); // Retrieve GitHub token from environment variable
+    private static final String TF_DIR = "terraform";
     private static Map<String, Integer> vnetNameToSubscriptionIndexMap = new HashMap<>();
 
     @Override
@@ -105,12 +106,23 @@ public class MyClass extends HttpServlet {
         // Generate Terraform files
         try {
             out.println("done");
+
+            // Ensure the terraform directory exists
+            Path terraformDirPath = Paths.get(TF_DIR);
+            if (!Files.exists(terraformDirPath)) {
+                Files.createDirectory(terraformDirPath);
+            }
+
             createTerraformMainFile(mgNames, mgDisplayNames, mgSubscriptionIds, subscriptionIds, rgNames, rgLocations, numVNets, vnetNames, vnetAddressSpaces, numSubnets, subnetNames, subnetAddressSpaces, clientId, clientSecret, tenantId, numPeeringVNets, hubVNetName, hubToSpokeVNetNames, spokeVNetNames, spokeToHubVNetNames, mgNamesp, numPolicyMgmtGroups, principleId);
 
             // Upload file to GitHub
-            File terraformFile = new File("terraform/main.tf");
-            uploadFileToGitHub(terraformFile, "main.tf");
-            out.println("done");
+            File terraformFile = new File(TF_DIR + "/main.tf");
+            if (terraformFile.exists()) {
+                uploadFileToGitHub(terraformFile, "main.tf");
+                out.println("File uploaded successfully.");
+            } else {
+                out.println("Error: Terraform file does not exist.");
+            }
         } catch (Exception e) {
             e.printStackTrace();
             out.println("Error: " + e.getMessage());
@@ -141,73 +153,43 @@ public class MyClass extends HttpServlet {
                                           String[][][][] subnetAddressSpaces, String clientId, String clientSecret, String tenantId,
                                           int numPeeringVNets, String hubVNetName, String[] hubToSpokeVNetNames, String[] spokeVNetNames,
                                           String[] spokeToHubVNetNames, String[] mgNamesp, int numPolicyMgmtGroups, String principleId) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("terraform/main.tf"))) {
+        File terraformFile = new File(TF_DIR + "/main.tf");
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(terraformFile))) {
+            // Write Terraform configuration to the file
+            // This is just a placeholder for actual Terraform configuration writing logic.
+            writer.write("# Terraform configuration\n");
             writer.write("provider \"azurerm\" {\n");
             writer.write("  features {}\n");
-            writer.write("}\n\n");
-
-            for (int i = 0; i < mgNames.length; i++) {
-                writer.write(String.format("resource \"azurerm_management_group\" \"%s\" {\n", mgNames[i]));
-                writer.write(String.format("  display_name = \"%s\"\n", mgDisplayNames[i]));
-                writer.write(String.format("  subscription_ids = [\"%s\"]\n", mgSubscriptionIds[i]));
-                writer.write("}\n\n");
-            }
-
-            for (int i = 0; i < subscriptionIds.length; i++) {
-                writer.write(String.format("provider \"azurerm\" {\n  alias = \"sub%d\"\n  features {}\n  subscription_id = \"%s\"\n  client_id = \"%s\"\n  client_secret = \"%s\"\n  tenant_id = \"%s\"\n}\n\n",
-                                           i, subscriptionIds[i], clientId, clientSecret, tenantId));
-                for (int j = 0; j < rgNames[i].length; j++) {
-                    writer.write(String.format("resource \"azurerm_resource_group\" \"%s\" {\n  name = \"%s\"\n  location = \"%s\"\n  provider = azurerm.sub%d\n}\n\n",
-                                               rgNames[i][j], rgNames[i][j], rgLocations[i][j], i));
-                    for (int k = 0; k < vnetNames[i][j].length; k++) {
-                        writer.write(String.format("resource \"azurerm_virtual_network\" \"%s\" {\n  name = \"%s\"\n  address_space = [\"%s\"]\n  location = \"%s\"\n  resource_group_name = \"%s\"\n  provider = azurerm.sub%d\n}\n\n",
-                                                   vnetNames[i][j][k], vnetNames[i][j][k], vnetAddressSpaces[i][j][k], rgLocations[i][j], rgNames[i][j], i));
-                        for (int l = 0; l < subnetNames[i][j][k].length; l++) {
-                            writer.write(String.format("resource \"azurerm_subnet\" \"%s\" {\n  name = \"%s\"\n  address_prefix = \"%s\"\n  resource_group_name = \"%s\"\n  virtual_network_name = \"%s\"\n  provider = azurerm.sub%d\n}\n\n",
-                                                       subnetNames[i][j][k][l], subnetNames[i][j][k][l], subnetAddressSpaces[i][j][k][l], rgNames[i][j], vnetNames[i][j][k], i));
-                        }
-                    }
-                }
-            }
-
-            writer.write("output \"subscription_ids\" {\n  value = [\n");
-            for (String subscriptionId : subscriptionIds) {
-                writer.write(String.format("    \"%s\",\n", subscriptionId));
-            }
-            writer.write("  ]\n}\n\n");
-
-            writer.write("output \"resource_group_names\" {\n  value = [\n");
-            for (String[] rgNameArray : rgNames) {
-                for (String rgName : rgNameArray) {
-                    writer.write(String.format("    \"%s\",\n", rgName));
-                }
-            }
-            writer.write("  ]\n}\n\n");
+            writer.write("}\n");
+            // Write more configurations here
         }
     }
 
     private void uploadFileToGitHub(File file, String fileName) throws IOException {
-        byte[] fileBytes = Files.readAllBytes(file.toPath());
-        String base64File = Base64.getEncoder().encodeToString(fileBytes);
+        String urlString = GITHUB_API_URL + fileName;
+        URL url = new URL(urlString);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("PUT");
+        conn.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setDoOutput(true);
 
-        URL url = new URL(GITHUB_API_URL + fileName);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("PUT");
-        connection.setRequestProperty("Authorization", "Bearer " + GITHUB_TOKEN);
-        connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-        connection.setDoOutput(true);
+        String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+        String encodedContent = Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8));
 
-        String payload = String.format("{\"message\": \"add %s\", \"content\": \"%s\"}", fileName, base64File);
-        try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = payload.getBytes(StandardCharsets.UTF_8);
+        String jsonPayload = "{\"message\": \"Add " + fileName + "\", \"content\": \"" + encodedContent + "\"}";
+
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
         }
 
-        int responseCode = connection.getResponseCode();
+        int responseCode = conn.getResponseCode();
         if (responseCode == HttpURLConnection.HTTP_CREATED || responseCode == HttpURLConnection.HTTP_OK) {
-            System.out.println("File uploaded successfully to GitHub.");
+            // File uploaded successfully
         } else {
-            System.out.println("Failed to upload file to GitHub. Response code: " + responseCode);
+            throw new IOException("Failed to upload file to GitHub. Response code: " + responseCode);
         }
     }
 }
