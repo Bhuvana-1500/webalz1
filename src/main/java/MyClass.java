@@ -282,9 +282,13 @@ public class MyClass extends HttpServlet {
             writer.write("}\n\n");
         }
 
-        writer.write("output \"management_group_ids\" {\n");
-        writer.write("  value = [for mg in azurerm_management_group.* : mg.id]\n");
-        writer.write("}\n");
+        for (int k = 0; k < numPolicyMgmtGroups ; k++) {
+                writer.write("resource \"azurerm_role_assignment\" \"example" + k + "\" {\n");
+                writer.write("  scope                = azurerm_management_group." + mgNamesp[k]  + ".id\n");
+                writer.write("  role_definition_name = \"Owner\"\n");
+                writer.write("  principal_id         = \""+ principleId +"\"\n");
+                writer.write("}\n\n");
+            }
 
     } catch (IOException e) {
         e.printStackTrace();
