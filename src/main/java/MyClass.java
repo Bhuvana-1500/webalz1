@@ -40,7 +40,7 @@ public class MyClass extends HttpServlet {
 
             // Create Terraform main file
             Path terraformFilePath = terraformDirPath.resolve("main.tf");
-            createTerraformMainFile(terraformFilePath, /* other parameters */);
+            createTerraformMainFile(terraformFilePath /* other parameters */);
 
             // Upload file to GitHub
             if (Files.exists(terraformFilePath)) {
@@ -55,7 +55,7 @@ public class MyClass extends HttpServlet {
         }
     }
 
-    private void createTerraformMainFile(Path terraformFilePath, /* other parameters */) throws IOException {
+    private void createTerraformMainFile(Path terraformFilePath /* other parameters */) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(terraformFilePath, StandardCharsets.UTF_8)) {
             // Write Terraform configuration to the file
             writer.write("# Terraform configuration\n");
