@@ -79,7 +79,7 @@ resource "azurerm_subnet" "sub1" {
 
 resource "azurerm_virtual_network_peering" "vnet1_to_vnet2" {
   provider = azurerm.provider0
-  name                = "hub-to-spoke"
+  name                = "hub-to-spoke1"
   resource_group_name = azurerm_virtual_network.vnet1.resource_group_name
   virtual_network_name = "vnet1"
   remote_virtual_network_id = azurerm_virtual_network.vnet2.id
@@ -91,7 +91,7 @@ resource "azurerm_virtual_network_peering" "vnet1_to_vnet2" {
 
 resource "azurerm_virtual_network_peering" "vnet2_to_vnet1" {
   provider = azurerm.provider0
-  name                = "spoke-to-hub"
+  name                = "spoke-to-hub1"
   resource_group_name = azurerm_virtual_network.vnet2.resource_group_name
   virtual_network_name = "vnet2"
   remote_virtual_network_id = azurerm_virtual_network.vnet1.id
