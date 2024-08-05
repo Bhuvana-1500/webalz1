@@ -302,42 +302,80 @@ public class MyClass extends HttpServlet {
             return index;
         }
 
-        private void uploadFileToGitHub(File file, String fileName) throws IOException {
-            String urlString = GITHUB_API_URL + fileName;
-            URL url = new URL(urlString);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("PUT");
-            conn.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setDoOutput(true);
-        
-            // Read file content and encode it
-            String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-            String encodedContent = Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8));
-        
-            // Construct JSON payload
-            String jsonPayload = "{\"message\": \"Add " + fileName + "\", \"content\": \"" + encodedContent + "\"}";
-        
-            // Write JSON payload to output stream
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
+    private void uploadFileToGitHub(File file, String path) throws IOException {
+    // First, retrieve the current SHA of the file
+    String sha = getFileShaFromGitHub(path);
+    
+    if (sha == null) {
+        throw new IOException("Failed to retrieve the SHA of the file.");
+    }
+
+    // Prepare the content to be uploaded
+    String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+    String encodedContent = Base64.getEncoder().encodeToString(content.getBytes(StandardCharsets.UTF_8));
+    
+    // Create the URL for the GitHub API
+    URL url = new URL(GITHUB_API_URL + path);
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("PUT");
+    conn.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
+    conn.setRequestProperty("Content-Type", "application/json");
+    conn.setDoOutput(true);
+
+    // Prepare the request body
+    String requestBody = "{"
+            + "\"message\": \"Updating file via API\","
+            + "\"content\": \"" + encodedContent + "\","
+            + "\"sha\": \"" + sha + "\""
+            + "}";
+
+    try (OutputStream os = conn.getOutputStream()) {
+        byte[] input = requestBody.getBytes(StandardCharsets.UTF_8);
+        os.write(input, 0, input.length);
+    }
+
+    // Check response code
+    int responseCode = conn.getResponseCode();
+    if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_CREATED) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) {
+                response.append(line.trim());
             }
-        
-            // Check response code and handle errors
-            int responseCode = conn.getResponseCode();
-            if (responseCode == HttpURLConnection.HTTP_CREATED || responseCode == HttpURLConnection.HTTP_OK) {
-                // File uploaded successfully
-            } else {
-                // Read error response
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8))) {
-                    StringBuilder errorResponse = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        errorResponse.append(line);
-                    }
-                    throw new IOException("Failed to upload file to GitHub. Response code: " + responseCode + ". Error: " + errorResponse.toString());
-                }
-            }
+            throw new IOException("Failed to upload file to GitHub. Response code: " + responseCode + ". Error: " + response.toString());
         }
+    }
+}
+
+private String getFileShaFromGitHub(String path) throws IOException {
+    URL url = new URL(GITHUB_API_URL + path);
+    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    conn.setRequestMethod("GET");
+    conn.setRequestProperty("Authorization", "token " + GITHUB_TOKEN);
+    conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
+
+    // Check response code
+    int responseCode = conn.getResponseCode();
+    if (responseCode != HttpURLConnection.HTTP_OK) {
+        throw new IOException("Failed to retrieve file SHA. Response code: " + responseCode);
+    }
+
+    // Read the response to get the SHA
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+        StringBuilder response = new StringBuilder();
+        String line;
+        while ((line = br.readLine()) != null) {
+            response.append(line.trim());
+        }
+        String responseBody = response.toString();
+        
+        // Extract the SHA from the response JSON
+        String shaPrefix = "\"sha\":\"";
+        int shaStart = responseBody.indexOf(shaPrefix) + shaPrefix.length();
+        int shaEnd = responseBody.indexOf("\"", shaStart);
+        return responseBody.substring(shaStart, shaEnd);
+    }
+}
+
 }
