@@ -1,6 +1,9 @@
 name: Terraform Deployment
 
 on:
+  push:
+    paths:
+      - 'main.tf'  # Trigger the workflow when the main.tf file is created or updated
   workflow_dispatch:  # Allows manual trigger from the GitHub Actions UI
     inputs:
       terraform_folder:
@@ -30,4 +33,4 @@ jobs:
       
       - name: Apply Terraform Configuration
         run: terraform apply -auto-approve
-        working-directory: ${{ github.event.inputs.main.tf }}
+        working-directory: ${{ github.event.inputs.terraform_folder }}
