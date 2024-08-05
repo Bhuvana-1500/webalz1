@@ -168,6 +168,10 @@ public class MyClass extends HttpServlet {
 
         writer.write("provider \"azurerm\" {\n");
         writer.write("  features {}\n");
+        writer.write("  subscription_id = \"" + subscriptionIds[0] + "\"\n");
+            writer.write("  client_id       = \"" + clientId + "\"\n");
+            writer.write("  client_secret   = \"" + clientSecret + "\"\n");
+            writer.write("  tenant_id       = \"" + tenantId + "\"\n");
         writer.write("}\n\n");
 
         for (int i = 0; i < subscriptionIds.length; i++) {
