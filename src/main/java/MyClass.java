@@ -276,6 +276,14 @@ public class MyClass extends HttpServlet {
         }
 
         for (int k = 0; k < numPolicyMgmtGroups ; k++) {
+                writer.write("resource \"azurerm_role_assignment\" \"example" + k + "\" {\n");
+                writer.write("  scope                = azurerm_management_group." + mgNamesp[k]  + ".id\n");
+                writer.write("  role_definition_name = \"Owner\"\n");
+                writer.write("  principal_id         = \""+ principleId +"\"\n");
+                writer.write("}\n\n");
+            }
+        
+        for (int k = 0; k < numPolicyMgmtGroups ; k++) {
             writer.write("resource \"azurerm_management_group_policy_assignment\" \"policyassignment"+ k +"\" {\n");
             writer.write("  for_each = { for p in csvdecode(file(\"${path.module}/Policy.csv\")): p.displayname => p }\n");
             writer.write("  \n");
@@ -286,13 +294,6 @@ public class MyClass extends HttpServlet {
             writer.write("}\n\n");
             }
 
-        for (int k = 0; k < numPolicyMgmtGroups ; k++) {
-                writer.write("resource \"azurerm_role_assignment\" \"example" + k + "\" {\n");
-                writer.write("  scope                = azurerm_management_group." + mgNamesp[k]  + ".id\n");
-                writer.write("  role_definition_name = \"Owner\"\n");
-                writer.write("  principal_id         = \""+ principleId +"\"\n");
-                writer.write("}\n\n");
-            }
 
     } catch (IOException e) {
         e.printStackTrace();
