@@ -46,11 +46,14 @@ jobs:
         run: terraform init
         working-directory: terraform
 
+      - name: Remove Terraform State File
+        run: rm -f terraform.tfstate
+
       - name: Apply Terraform Configuration
         env:
           TF_VAR_tenant_id: ${{ steps.extract-creds.outputs.tenant_id }}
           TF_VAR_client_id: ${{ steps.extract-creds.outputs.client_id }}
           TF_VAR_client_secret: ${{ steps.extract-creds.outputs.client_secret }}
           TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        run: terraform destroy -auto-approve
+        run: terraform apply -auto-approve
         working-directory: terraform
