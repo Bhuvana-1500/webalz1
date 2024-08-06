@@ -46,6 +46,9 @@ jobs:
         run: terraform init
         working-directory: terraform
 
+      - name: Remove Terraform State File
+        run: rm -f terraform.tfstate
+
       - name: Apply Terraform Configuration
         env:
           TF_VAR_tenant_id: ${{ steps.extract-creds.outputs.tenant_id }}
