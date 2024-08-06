@@ -55,5 +55,5 @@ jobs:
           TF_VAR_client_id: ${{ steps.extract-creds.outputs.client_id }}
           TF_VAR_client_secret: ${{ steps.extract-creds.outputs.client_secret }}
           TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        run: terraform apply -auto-approve
+        run: terraform destroy -auto-approve
         working-directory: terraform
