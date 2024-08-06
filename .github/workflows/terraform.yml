@@ -24,19 +24,22 @@ jobs:
           sudo apt-get install -y curl
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
-      - name: Extract Azure credentials from main.tf
-        id: extract-vars
+      - name: Extract Azure Credentials
+        id: extract-creds
         run: |
-          export CLIENT_ID=$(grep -oP '(?<=client_id\s*=\s*").*(?=")' terraform/main.tf)
-          export CLIENT_SECRET=$(grep -oP '(?<=client_secret\s*=\s*").*(?=")' terraform/main.tf)
-          export TENANT_ID=$(grep -oP '(?<=tenant_id\s*=\s*").*(?=")' terraform/main.tf)
+          CLIENT_ID=$(awk -F' *= *' '/client_id/ {print $2}' terraform/main.tf | tr -d '"')
+          CLIENT_SECRET=$(awk -F' *= *' '/client_secret/ {print $2}' terraform/main.tf | tr -d '"')
+          TENANT_ID=$(awk -F' *= *' '/tenant_id/ {print $2}' terraform/main.tf | tr -d '"')
           echo "CLIENT_ID=$CLIENT_ID" >> $GITHUB_ENV
           echo "CLIENT_SECRET=$CLIENT_SECRET" >> $GITHUB_ENV
           echo "TENANT_ID=$TENANT_ID" >> $GITHUB_ENV
 
       - name: Log in to Azure CLI
-        run: |
-          az login --service-principal -u "$CLIENT_ID" -p "$CLIENT_SECRET" --tenant "$TENANT_ID"
+        run: az login --service-principal -u "$CLIENT_ID" -p "$CLIENT_SECRET" --tenant "$TENANT_ID"
+        env:
+          CLIENT_ID: ${{ env.CLIENT_ID }}
+          CLIENT_SECRET: ${{ env.CLIENT_SECRET }}
+          TENANT_ID: ${{ env.TENANT_ID }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
