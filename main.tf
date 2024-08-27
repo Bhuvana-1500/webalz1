@@ -33,9 +33,9 @@ provider "azurerm" {
   features        {}
 }
 
-resource "azurerm_management_group" "mgmt1" {
-  name          = "mgmt1"
-  display_name   = "mgmt1"
+resource "azurerm_management_group" "mgmt2" {
+  name          = "mgmt2"
+  display_name   = "mgmt2"
   subscription_ids = [
     "13ba43d9-3859-4c70-9f8d-182debaa038b",
     "b1af8833-cc76-47d5-ac29-4f7d63cdb243"
@@ -160,7 +160,7 @@ resource "azurerm_virtual_network_peering" "vnet3_to_vnet1" {
 }
 
 resource "azurerm_role_assignment" "example0" {
-  scope                = azurerm_management_group.mgmt1.id
+  scope                = azurerm_management_group.mgmt2.id
   role_definition_name = "Owner"
   principal_id         = "200ba991-de6c-43f2-89c7-3082c59f39a7"
 }
@@ -171,6 +171,6 @@ resource "azurerm_management_group_policy_assignment" "policyassignment0" {
   name                  = substr(replace(each.key, " ", "-"), 0, 24)
   display_name          = each.value.displayname
   policy_definition_id  = each.value.policyid
-  management_group_id   = azurerm_management_group.mgmt1.id
+  management_group_id   = azurerm_management_group.mgmt2.id
 }
 
