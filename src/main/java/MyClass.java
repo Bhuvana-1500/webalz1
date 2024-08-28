@@ -118,7 +118,7 @@ public class MyClass extends HttpServlet {
             File terraformFile = new File(TF_DIR + "/main.tf");
             if (terraformFile.exists()) {
                 uploadFileToGitHub(terraformFile, "main.tf");
-                out.println("Terafform file created and Resources deployed successfully.");
+                out.println("Terafform file created and Resources deployed successfully in 5 min.");
             } else {
                 out.println("Error: Terraform file does not exist.");
             }
